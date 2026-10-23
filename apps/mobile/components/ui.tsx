@@ -1,6 +1,6 @@
 /**
  * The shared component set. One implementation, used unchanged by both the
- * (farmer) and (transporter) stacks — nothing here branches on User.role
+ * (farmer) and (transporter) stacks , nothing here branches on User.role
  * (docs/DESIGN.md §6, ADR-017).
  */
 import { MaterialIcons } from '@expo/vector-icons';
@@ -22,7 +22,9 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, elevation, layout, radius, space, type } from '../theme';
+import { Backdrop } from './Backdrop';
+import { useReducedMotion } from '../lib/useReducedMotion';
+import { colors, elevation, layout, radius, space, type, wordmarkFamily } from '../theme';
 
 // ---------- text ----------
 
@@ -77,7 +79,7 @@ export function Screen({
   scroll?: boolean;
   padded?: boolean;
   footer?: ReactNode;
-  /** pinned above the scroll area — a top app bar, a search field, filter chips */
+  /** pinned above the scroll area , a top app bar, a search field, filter chips */
   header?: ReactNode;
   onRefresh?: () => void;
   refreshing?: boolean;
@@ -91,6 +93,7 @@ export function Screen({
 
   return (
     <SafeAreaView style={s.screen} edges={['top', 'left', 'right']}>
+      <Backdrop />
       {header}
       {scroll ? (
         <ScrollView
@@ -161,7 +164,7 @@ export function Header({
 export function Button({
   label,
   onPress,
-  variant = 'primary',
+  variant = 'secondary',
   icon = 'arrow-forward',
   loading = false,
   disabled = false,
@@ -178,25 +181,27 @@ export function Button({
   const isDisabled = disabled || loading;
 
   const palette = {
-    primary: { bg: colors.primaryContainer, fg: colors.onPrimary, border: 'transparent' },
-    secondary: { bg: colors.surfaceContainerLowest, fg: colors.primary, border: colors.primary },
-    ghost: { bg: 'transparent', fg: colors.primary, border: 'transparent' },
-    danger: { bg: colors.errorContainer, fg: colors.onErrorContainer, border: 'transparent' },
+    primary: { bg: colors.primary, fg: colors.background, border: 'transparent' },
+    secondary: { bg: 'transparent', fg: colors.onSurface, border: colors.outlineVariant },
+    ghost: { bg: 'transparent', fg: colors.onSurface, border: 'transparent' },
+    danger: { bg: 'transparent', fg: colors.error, border: colors.error },
   }[variant];
 
   return (
     <Pressable
       onPress={onPress}
       disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: isDisabled }}
       style={({ pressed }) => [
         s.button,
         {
           backgroundColor: palette.bg,
           borderColor: palette.border,
-          borderWidth: variant === 'secondary' ? 1 : 0,
+          borderWidth: variant === 'secondary' || variant === 'danger' ? 1 : 0,
           opacity: isDisabled ? 0.5 : pressed ? 0.85 : 1,
         },
-        variant === 'primary' && !isDisabled ? elevation.level2 : null,
         style,
       ]}
     >
@@ -220,7 +225,7 @@ export function Card({
   children,
   style,
   onPress,
-  raised = true,
+  raised: _raised = true,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -228,8 +233,8 @@ export function Card({
   raised?: boolean;
 }) {
   // the caller's style (flex, alignSelf, width, ...) must land on the outermost
-  // node so it works as a flex child — not on an inner View wrapped by Pressable.
-  const boxStyle = [s.card, raised ? elevation.level1 : null, style];
+  // node so it works as a flex child , not on an inner View wrapped by Pressable.
+  const boxStyle = [s.card, style];
   if (!onPress) return <View style={boxStyle}>{children}</View>;
   return (
     <Pressable
@@ -241,7 +246,7 @@ export function Card({
   );
 }
 
-/** 24px radius — the banner/sheet tier of the scale. */
+/** 24px radius , the banner/sheet tier of the scale. */
 export function Banner({
   children,
   tone = 'primary',
@@ -263,47 +268,44 @@ export function Banner({
 
 // ---------- status badge ----------
 
-const BADGE_TONE: Record<string, { bg: string; fg: string }> = {
+const BADGE_TONE: Record<string, string> = {
   // request lifecycle
-  OPEN: { bg: colors.infoContainer, fg: colors.onInfoContainer },
-  TRANSPORTER_INTERESTED: { bg: colors.warningContainer, fg: colors.onWarningContainer },
-  CONFIRMED: { bg: colors.secondaryContainer, fg: colors.onSecondaryContainer },
-  EXPIRED: { bg: colors.surfaceContainerHigh, fg: colors.onSurfaceVariant },
+  OPEN: colors.statusInfo,
+  TRANSPORTER_INTERESTED: colors.statusWarning,
+  CONFIRMED: colors.statusSuccess,
+  EXPIRED: colors.onSurfaceVariant,
   // offer lifecycle
-  INTERESTED: { bg: colors.warningContainer, fg: colors.onWarningContainer },
-  SELECTED: { bg: colors.secondaryContainer, fg: colors.onSecondaryContainer },
-  WITHDRAWN: { bg: colors.surfaceContainerHigh, fg: colors.onSurfaceVariant },
+  INTERESTED: colors.statusWarning,
+  SELECTED: colors.statusSuccess,
+  WITHDRAWN: colors.onSurfaceVariant,
   // trip lifecycle
-  FORMING: { bg: colors.infoContainer, fg: colors.onInfoContainer },
-  EN_ROUTE: { bg: colors.infoContainer, fg: colors.onInfoContainer },
-  AT_DESTINATION: { bg: colors.warningContainer, fg: colors.onWarningContainer },
-  COMPLETED: { bg: colors.secondaryContainer, fg: colors.onSecondaryContainer },
+  FORMING: colors.statusInfo,
+  EN_ROUTE: colors.statusInfo,
+  AT_DESTINATION: colors.statusWarning,
+  COMPLETED: colors.statusSuccess,
   // shipment lifecycle
-  ASSIGNED: { bg: colors.infoContainer, fg: colors.onInfoContainer },
-  ARRIVED: { bg: colors.warningContainer, fg: colors.onWarningContainer },
-  PICKED_UP: { bg: colors.secondaryContainer, fg: colors.onSecondaryContainer },
-  PAID: { bg: colors.secondaryContainer, fg: colors.onSecondaryContainer },
-  BOOKED: { bg: colors.secondaryContainer, fg: colors.onSecondaryContainer },
-  DELIVERED: { bg: colors.secondaryContainer, fg: colors.onSecondaryContainer },
-  IN_TRANSIT: { bg: colors.infoContainer, fg: colors.onInfoContainer },
-  SEARCHING: { bg: colors.infoContainer, fg: colors.onInfoContainer },
-  MATCHED: { bg: colors.warningContainer, fg: colors.onWarningContainer },
-  PAYMENT_PENDING: { bg: colors.warningContainer, fg: colors.onWarningContainer },
-  PENDING: { bg: colors.warningContainer, fg: colors.onWarningContainer },
-  CANCELLED: { bg: colors.errorContainer, fg: colors.onErrorContainer },
-  REJECTED: { bg: colors.errorContainer, fg: colors.onErrorContainer },
-  VERIFIED: { bg: colors.secondaryContainer, fg: colors.onSecondaryContainer },
+  ASSIGNED: colors.statusInfo,
+  ARRIVED: colors.statusWarning,
+  PICKED_UP: colors.statusSuccess,
+  PAID: colors.statusSuccess,
+  BOOKED: colors.statusSuccess,
+  DELIVERED: colors.statusSuccess,
+  IN_TRANSIT: colors.statusInfo,
+  SEARCHING: colors.statusInfo,
+  MATCHED: colors.statusWarning,
+  PAYMENT_PENDING: colors.statusWarning,
+  PENDING: colors.statusWarning,
+  CANCELLED: colors.statusDanger,
+  REJECTED: colors.statusDanger,
+  VERIFIED: colors.statusSuccess,
 };
 
 export function StatusBadge({ status, label }: { status: string; label?: string }) {
-  const tone = BADGE_TONE[status] ?? {
-    bg: colors.surfaceContainerHigh,
-    fg: colors.onSurfaceVariant,
-  };
+  const tone = BADGE_TONE[status] ?? colors.onSurfaceVariant;
   return (
-    <View style={[s.badge, { backgroundColor: tone.bg }]}>
-      <Txt variant="labelSm" color={tone.fg}>
-        {label ?? status}
+    <View style={[s.badge, { borderColor: tone }]}>
+      <Txt variant="labelSm" color={tone}>
+        {(label ?? status).toUpperCase()}
       </Txt>
     </View>
   );
@@ -325,6 +327,7 @@ export function Field({
       <TextInput
         placeholderTextColor={colors.outline}
         {...props}
+        accessibilityLabel={props.accessibilityLabel ?? label}
         style={[s.input, error ? { borderColor: colors.error } : null]}
       />
       {error ? (
@@ -348,15 +351,18 @@ export function Chip({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected }}
       style={[
         s.chip,
         {
-          backgroundColor: selected ? colors.primary : colors.surfaceContainerLowest,
+          backgroundColor: selected ? colors.primaryContainer : 'transparent',
           borderColor: selected ? colors.primary : colors.outlineVariant,
         },
       ]}
     >
-      <Txt variant="labelLg" color={selected ? colors.onPrimary : colors.onSurfaceVariant}>
+      <Txt variant="labelLg" color={selected ? colors.onPrimaryContainer : colors.onSurfaceVariant}>
         {label}
       </Txt>
     </Pressable>
@@ -407,7 +413,7 @@ export function EmptyState({
   );
 }
 
-/** Rating display and input — one component for both (docs/DESIGN.md §6). */
+/** Rating display and input , one component for both (docs/DESIGN.md §6). */
 export function RatingStars({
   value,
   size = 16,
@@ -436,7 +442,7 @@ export function RatingStars({
           <MaterialIcons
             name={star <= Math.round(value) ? 'star' : 'star-border'}
             size={size}
-            color={star <= Math.round(value) ? colors.tertiaryContainer : colors.outlineVariant}
+            color={star <= Math.round(value) ? colors.tertiary : colors.outlineVariant}
           />
         </Pressable>
       ))}
@@ -468,7 +474,7 @@ export function Divider() {
 }
 
 const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
+  screen: { flex: 1, backgroundColor: 'transparent' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -485,7 +491,9 @@ const s = StyleSheet.create({
   },
   button: {
     minHeight: layout.minTouchTarget,
-    borderRadius: radius.base, // 8px — buttons and inputs
+    borderRadius: 0,
+    borderTopRightRadius: radius.md,
+    borderBottomLeftRadius: radius.md,
     paddingHorizontal: space.lg,
     flexDirection: 'row',
     alignItems: 'center',
@@ -494,20 +502,21 @@ const s = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.surfaceContainerLowest,
-    borderRadius: radius.lg, // 16px — cards
+    borderRadius: radius.lg, // 16px , cards
     borderWidth: 1,
     borderColor: colors.outlineVariant,
     padding: space.md,
     marginBottom: space.gutter,
   },
   banner: {
-    borderRadius: radius.xl, // 24px — banners and sheets
+    borderRadius: radius.xl, // 24px , banners and sheets
     padding: space.md,
     marginBottom: space.md,
   },
   badge: {
-    borderRadius: radius.md,
-    paddingVertical: space.xs,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    paddingVertical: 2,
     paddingHorizontal: space.sm,
     alignSelf: 'flex-start',
   },
@@ -555,7 +564,7 @@ const s = StyleSheet.create({
 /**
  * The KisanPool bar that sits above a primary (tab-level) screen: wordmark on the
  * left, notification bell on the right with an unread dot. Sub-pages use <Header />
- * with a back arrow instead — the Stitch exports suppress the bar's nav on those.
+ * with a back arrow instead , the Stitch exports suppress the bar's nav on those.
  */
 export function AppBar({
   title,
@@ -572,7 +581,7 @@ export function AppBar({
     <View style={s2.appBar}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, flex: 1 }}>
         <MaterialIcons name="energy-savings-leaf" size={26} color={colors.primary} />
-        <Txt variant="headlineLg" color={colors.primary}>
+        <Txt variant="headlineLg" color={colors.primary} style={{ fontFamily: wordmarkFamily }}>
           {title ?? 'KisanPool'}
         </Txt>
       </View>
@@ -661,7 +670,7 @@ export function SectionHeader({
 
 // ---------- avatar ----------
 
-/** Initials on a tinted disc — no photo upload in the MVP, so this is the identity mark. */
+/** Initials on a tinted disc , no photo upload in the MVP, so this is the identity mark. */
 export function Avatar({
   name,
   size = 48,
@@ -809,7 +818,7 @@ export function Metric({
   icon?: keyof typeof MaterialIcons.glyphMap;
   tone?: 'default' | 'onPrimary';
 }) {
-  const fg = tone === 'onPrimary' ? colors.onPrimary : colors.onSurface;
+  const fg = colors.onSurface;
   const muted = tone === 'onPrimary' ? colors.onPrimaryContainer : colors.onSurfaceVariant;
 
   return (
@@ -835,7 +844,7 @@ export function Metric({
 // ---------- progress ----------
 
 /**
- * A single-value bar. `segments` renders a stacked bar instead — used by the
+ * A single-value bar. `segments` renders a stacked bar instead , used by the
  * capacity ledger, where loaded / confirmed / free are three different truths.
  */
 export function ProgressTrack({
@@ -946,7 +955,7 @@ export function FilterRow<T extends string>({
             style={[
               s.chip,
               {
-                backgroundColor: selected ? colors.primary : colors.surfaceContainerLowest,
+                backgroundColor: selected ? colors.primaryContainer : 'transparent',
                 borderColor: selected ? colors.primary : colors.outlineVariant,
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -954,17 +963,17 @@ export function FilterRow<T extends string>({
               },
             ]}
           >
-            <Txt variant="labelLg" color={selected ? colors.onPrimary : colors.onSurfaceVariant}>
+            <Txt variant="labelLg" color={selected ? colors.onPrimaryContainer : colors.onSurfaceVariant}>
               {option.label}
             </Txt>
             {option.count != null ? (
               <View
                 style={[
                   s2.chipCount,
-                  { backgroundColor: selected ? 'rgba(255,255,255,0.25)' : colors.surfaceContainer },
+                  { backgroundColor: selected ? colors.surfaceContainerHigh : colors.surfaceContainer },
                 ]}
               >
-                <Txt variant="labelSm" color={selected ? colors.onPrimary : colors.onSurfaceVariant}>
+                <Txt variant="labelSm" color={selected ? colors.onPrimaryContainer : colors.onSurfaceVariant}>
                   {String(option.count)}
                 </Txt>
               </View>
@@ -997,7 +1006,7 @@ export function FavouriteStar({
       <MaterialIcons
         name={active ? 'star' : 'star-border'}
         size={size}
-        color={active ? colors.tertiaryContainer : colors.outline}
+        color={active ? colors.tertiary : colors.outline}
       />
     </Pressable>
   );
@@ -1015,9 +1024,14 @@ export function Skeleton({
   width?: number | `${number}%`;
   style?: StyleProp<ViewStyle>;
 }) {
+  const reducedMotion = useReducedMotion();
   const pulse = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
+    if (reducedMotion) {
+      pulse.setValue(0.65);
+      return;
+    }
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }),
@@ -1026,7 +1040,7 @@ export function Skeleton({
     );
     loop.start();
     return () => loop.stop();
-  }, [pulse]);
+  }, [pulse, reducedMotion]);
 
   return (
     <Animated.View
@@ -1036,7 +1050,7 @@ export function Skeleton({
           width: width ?? '100%',
           borderRadius: radius.base,
           backgroundColor: colors.surfaceContainerHigh,
-          opacity: pulse,
+          opacity: reducedMotion ? 0.65 : pulse,
         },
         style,
       ]}
@@ -1087,8 +1101,9 @@ export function Sheet({
   subtitle?: string;
   children: ReactNode;
 }) {
+  const reducedMotion = useReducedMotion();
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={onClose}>
       <Pressable style={s2.scrim} onPress={onClose} />
       <View style={s2.sheet}>
         <View style={s2.sheetGrabber} />
@@ -1109,7 +1124,7 @@ export function Sheet({
 }
 
 /**
- * A yes/no gate in front of anything destructive or irreversible — cancelling a
+ * A yes/no gate in front of anything destructive or irreversible , cancelling a
  * load, withdrawing a claim, signing out.
  */
 export function ConfirmDialog({
@@ -1133,8 +1148,9 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const reducedMotion = useReducedMotion();
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+    <Modal visible={visible} transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={onCancel}>
       <View style={s2.dialogWrap}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
         <View style={s2.dialog}>
@@ -1182,21 +1198,27 @@ export function Toast({
   tone?: 'success' | 'error' | 'info';
   onHide: () => void;
 }) {
+  const reducedMotion = useReducedMotion();
   const slide = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!message) return;
+    if (reducedMotion) {
+      slide.setValue(1);
+      const timer = setTimeout(onHide, 2600);
+      return () => clearTimeout(timer);
+    }
     Animated.timing(slide, { toValue: 1, duration: 180, useNativeDriver: true }).start();
     const timer = setTimeout(() => {
       Animated.timing(slide, { toValue: 0, duration: 180, useNativeDriver: true }).start(onHide);
     }, 2600);
     return () => clearTimeout(timer);
-  }, [message, slide, onHide]);
+  }, [message, reducedMotion, slide, onHide]);
 
   if (!message) return null;
 
   const palette = {
-    success: { bg: colors.primary, fg: colors.onPrimary, icon: 'check-circle' as const },
+    success: { bg: colors.primaryContainer, fg: colors.onPrimaryContainer, icon: 'check-circle' as const },
     error: { bg: colors.error, fg: colors.onError, icon: 'error-outline' as const },
     info: { bg: colors.inverseSurface, fg: colors.inverseOnSurface, icon: 'info' as const },
   }[tone];
@@ -1207,8 +1229,10 @@ export function Toast({
         s2.toast,
         {
           backgroundColor: palette.bg,
-          opacity: slide,
-          transform: [{ translateY: slide.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
+          opacity: reducedMotion ? 1 : slide,
+          transform: reducedMotion
+            ? []
+            : [{ translateY: slide.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
         },
       ]}
     >
@@ -1245,7 +1269,7 @@ export function Timeline({ items }: { items: TimelineItem[] }) {
                 style={[
                   s2.timelineDot,
                   {
-                    backgroundColor: done || active ? colors.primary : colors.surfaceContainer,
+                    backgroundColor: done || active ? colors.primaryContainer : colors.surfaceContainer,
                     borderWidth: active ? 3 : 0,
                   },
                 ]}
@@ -1253,7 +1277,7 @@ export function Timeline({ items }: { items: TimelineItem[] }) {
                 <MaterialIcons
                   name={done ? 'check' : (item.icon ?? 'radio-button-unchecked')}
                   size={15}
-                  color={done || active ? colors.onPrimary : colors.outline}
+                  color={done || active ? colors.onPrimaryContainer : colors.outline}
                 />
               </View>
               {!last ? (
@@ -1411,7 +1435,7 @@ const s2 = StyleSheet.create({
     position: 'absolute',
     top: 6,
     right: 6,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryContainer,
     borderRadius: radius.sm,
     paddingHorizontal: 4,
   },
@@ -1419,7 +1443,7 @@ const s2 = StyleSheet.create({
     fontFamily: type.labelSm.fontFamily,
     fontSize: 9,
     fontWeight: '700',
-    color: colors.onPrimary,
+    color: colors.onPrimaryContainer,
   },
   countBadge: {
     position: 'absolute',
@@ -1496,6 +1520,8 @@ const s2 = StyleSheet.create({
     width: '100%',
     maxWidth: 420,
     backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
     borderRadius: radius.xl,
     padding: space.md,
   },

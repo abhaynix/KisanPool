@@ -3,7 +3,7 @@
  *
  * Everything here is about the pool: who else is riding, how much of the vehicle
  * is used, and what this farmer's share has fallen to. The share moves while the
- * screen is open — a `trip:pricing_updated` is applied in place rather than
+ * screen is open , a `trip:pricing_updated` is applied in place rather than
  * refetched, so the farmer literally watches the number drop when someone joins.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -60,10 +60,10 @@ const STEPS: ShipmentState[] = [
 ];
 
 const STEP_LABEL: Record<ShipmentState, string> = {
-  ASSIGNED: 'Confirmed — waiting for the driver',
+  ASSIGNED: 'Confirmed , waiting for the driver',
   EN_ROUTE: 'Driver on the way to you',
   ARRIVED: 'Driver at your pickup point',
-  PICKED_UP: 'Loaded — read out your code',
+  PICKED_UP: 'Loaded , read out your code',
   IN_TRANSIT: 'On the way to the mandi',
   DELIVERED: 'Delivered at the mandi',
   PAYMENT_PENDING: 'Payment due',
@@ -117,7 +117,7 @@ export default function SharedTrip() {
       const trip = await api.getTrip(id);
       setDetail(trip);
 
-      // advisory delay risk — best-effort, never blocks the trip view
+      // advisory delay risk , best-effort, never blocks the trip view
       api.tripPrediction(id).then(setPrediction).catch(() => setPrediction(null));
       // live-track hand-off state (button enable + latest position)
       api.trackTrip(id).then(setTrack).catch(() => setTrack(null));
@@ -137,7 +137,7 @@ export default function SharedTrip() {
     }
   }, [id]);
 
-  /** Reconcile in the background — no spinner, no error surface, just newer truth. */
+  /** Reconcile in the background , no spinner, no error surface, just newer truth. */
   const refresh = useCallback(async () => {
     try {
       setDetail(await api.getTrip(id));
@@ -161,7 +161,7 @@ export default function SharedTrip() {
       // the whole point of pooling: the share is re-split and pushed, never re-fetched.
       // The event now carries the entire re-priced trip (ADR-040), so the headline
       // share, the trip total, the pricing version and every other farmer's row all
-      // move together — not just this shipment's `allocatedPrice`.
+      // move together , not just this shipment's `allocatedPrice`.
       'trip:pricing_updated': (payload: PricingUpdatedEvent) => {
         setDetail((prev) => {
           if (!prev) return prev;
@@ -178,7 +178,7 @@ export default function SharedTrip() {
               }),
             };
           }
-          // older server without the full DTO — patch this row from `updates`
+          // older server without the full DTO , patch this row from `updates`
           return {
             ...prev,
             shipments: prev.shipments.map((s) => {
@@ -192,8 +192,8 @@ export default function SharedTrip() {
         if (mineUpdate) {
           setPriceNote(
             mineUpdate.previousAmount != null && mineUpdate.amount < mineUpdate.previousAmount
-              ? `Your cost dropped to ${rupees(mineUpdate.amount)} — ${payload.reason}.`
-              : `Your cost is now ${rupees(mineUpdate.amount)} — ${payload.reason}.`,
+              ? `Your cost dropped to ${rupees(mineUpdate.amount)} , ${payload.reason}.`
+              : `Your cost is now ${rupees(mineUpdate.amount)} , ${payload.reason}.`,
           );
         }
       },
@@ -209,7 +209,7 @@ export default function SharedTrip() {
               }
             : prev,
         );
-        // a delivered load ends live tracking for that farmer — re-check
+        // a delivered load ends live tracking for that farmer , re-check
         api.trackTrip(id).then(setTrack).catch(() => {});
       },
 
@@ -217,7 +217,7 @@ export default function SharedTrip() {
         setDetail((prev) =>
           prev ? { ...prev, trip: { ...prev.trip, capacity: payload.capacity } } : prev,
         );
-        // capacity changed because someone joined or left — pull in who that is
+        // capacity changed because someone joined or left , pull in who that is
         void refresh();
       },
 
@@ -248,7 +248,7 @@ export default function SharedTrip() {
     },
   );
 
-  // the price note is a nudge, not a state — it clears itself
+  // the price note is a nudge, not a state , it clears itself
   useEffect(() => {
     if (!priceNote) return;
     const timer = setTimeout(() => setPriceNote(null), 10000);
@@ -336,11 +336,11 @@ export default function SharedTrip() {
   }
 
   const { trip, vehicle, transporter, shipments } = detail;
-  // everyone sharing this trip, delivered loads included — the roster is what the
+  // everyone sharing this trip, delivered loads included , the roster is what the
   // farmer's price was split across, not just what is still in the vehicle
   const roster = shipments.filter((s) => s.state !== 'CANCELLED');
   const others = roster.filter((s) => s._id !== mine._id);
-  // the backend's own figures for this load — never recomputed here (ADR-035/040)
+  // the backend's own figures for this load , never recomputed here (ADR-035/040)
   const pricing = detail.pricing;
   const breakdown = mine.pricing ?? null;
   const share = breakdown?.amount ?? mine.finalPrice ?? mine.allocatedPrice;
@@ -348,7 +348,7 @@ export default function SharedTrip() {
   const saved = Math.max(solo - share, 0);
   const savedPct = breakdown?.savingPct ?? mine.savingPct;
   const poolSize = pricing?.poolSize ?? roster.length;
-  // one farmer aboard is a real, common state while a trip is still FORMING — it is
+  // one farmer aboard is a real, common state while a trip is still FORMING , it is
   // NOT a pooled trip, and showing "you save ₹0 (0%)" against an identical struck-
   // through price reads like a bug. Solo and pooled get different copy (ADR-040).
   const pooled = poolSize > 1;
@@ -373,13 +373,13 @@ export default function SharedTrip() {
             icon="lock"
             loading={paying}
             onPress={() => void pay()}
-          />
+           variant="primary"/>
         ) : mine.state === 'PAID' || mine.state === 'COMPLETED' ? (
           <Button
             label="Rate the driver"
             icon="star"
             onPress={() => router.push(`/(farmer)/trips/${id}/rate?shipmentId=${mine._id}`)}
-          />
+           variant="secondary"/>
         ) : CANCELLABLE_STATES.includes(mine.state) ? (
           <Button
             label="Cancel my load"
@@ -413,12 +413,12 @@ export default function SharedTrip() {
         </Banner>
       ) : null}
 
-      {/* honest status during an incident — silent when everything is normal */}
+      {/* honest status during an incident , silent when everything is normal */}
       <ServiceBanner status={serviceStatus} />
 
       {error ? <ErrorView error={error} onRetry={() => void load()} /> : null}
 
-      {/* delivery-risk insight — renders only for MEDIUM/HIGH (ADR-041) */}
+      {/* delivery-risk insight , renders only for MEDIUM/HIGH (ADR-041) */}
       <InsightCard assessment={prediction?.delay} title="Possible delivery delay" />
 
       <TripMap
@@ -438,7 +438,7 @@ export default function SharedTrip() {
         height={260}
       />
 
-      {/* Live Track — hands off to Google Maps for navigation; shown only while
+      {/* Live Track , hands off to Google Maps for navigation; shown only while
           the trip is in a trackable state and this farmer's load is not yet
           delivered (ADR-042). One trip, one vehicle, one stream. */}
       {track?.trackable && track.directionsUrl ? (
@@ -485,7 +485,7 @@ export default function SharedTrip() {
         </Card>
       ) : null}
 
-      {/* the code the farmer reads out — nobody else on the trip can see it */}
+      {/* the code the farmer reads out , nobody else on the trip can see it */}
       {mine.pickupOtp && OTP_VISIBLE_STATES.includes(mine.state) ? (
         <View style={s.otpCard}>
           <Txt variant="labelLg" color={colors.onPrimaryContainer}>
@@ -500,7 +500,7 @@ export default function SharedTrip() {
         </View>
       ) : null}
 
-      {/* what the pool has done to the bill — the backend's numbers only (ADR-040) */}
+      {/* what the pool has done to the bill , the backend's numbers only (ADR-040) */}
       <Card>
         <View
           style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
@@ -542,11 +542,11 @@ export default function SharedTrip() {
           </Txt>
         ) : (
           <Txt variant="labelLg" color={colors.onSurfaceVariant}>
-            You have this vehicle to yourself for now — your share drops as farmers join.
+            You have this vehicle to yourself for now , your share drops as farmers join.
           </Txt>
         )}
 
-        {/* WHY it is this number — the actual working the backend used, so a farmer
+        {/* WHY it is this number , the actual working the backend used, so a farmer
             can check it against what they were told. */}
         {pricing ? (
           <View style={{ marginTop: space.gutter }}>
@@ -583,7 +583,7 @@ export default function SharedTrip() {
             <Row label="Your share" value={rupees(share)} bold />
             <Txt variant="labelSm" color={colors.outline} style={{ marginTop: space.xs }}>
               {pooled
-                ? 'The shared run is split by tonne-kilometres — how much you send and how far it rides — plus your own detour. A bigger or further load pays more; nobody pays an equal split.'
+                ? 'The shared run is split by tonne-kilometres , how much you send and how far it rides , plus your own detour. A bigger or further load pays more; nobody pays an equal split.'
                 : 'One farmer, one bill: you cover the whole route for now. Each farmer who joins takes a slice by tonne-kilometres and your share falls.'}
             </Txt>
           </View>
@@ -591,11 +591,11 @@ export default function SharedTrip() {
 
         {frozen ? (
           <Txt variant="labelSm" color={colors.onSurfaceVariant} style={{ marginTop: space.xs }}>
-            Final — frozen when your produce was delivered.
+            Final , frozen when your produce was delivered.
           </Txt>
         ) : (
           <Txt variant="labelSm" color={colors.onSurfaceVariant} style={{ marginTop: space.xs }}>
-            This can still change — it is re-split every time a farmer joins or leaves, and
+            This can still change , it is re-split every time a farmer joins or leaves, and
             freezes at delivery.
           </Txt>
         )}
@@ -695,7 +695,7 @@ export default function SharedTrip() {
               </Txt>
             </View>
             <Txt variant="labelSm" color={colors.onSurfaceVariant} style={{ marginTop: space.xs }}>
-              {vehicle?.registrationNumber ?? '—'} · {vehicle?.vehicleType ?? '—'}
+              {vehicle?.registrationNumber ?? ','} · {vehicle?.vehicleType ?? ','}
             </Txt>
           </View>
         </View>
@@ -735,7 +735,7 @@ export default function SharedTrip() {
         <Row label="Route" value={`${trip.routeDistanceKm.toFixed(1)} km`} />
       </Card>
 
-      {/* help — a phone number before a chatbot, always */}
+      {/* help , a phone number before a chatbot, always */}
       <Card>
         <Txt variant="labelLg" color={colors.onSurfaceVariant} style={{ marginBottom: space.sm }}>
           Need help?

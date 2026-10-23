@@ -1,6 +1,6 @@
 /**
  * The role gate. After OTP verification the root navigator reads User.role and
- * mounts exactly one stack — there is no in-app role switch in the MVP (ADR-001).
+ * mounts exactly one stack , there is no in-app role switch in the MVP (ADR-001).
  */
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';

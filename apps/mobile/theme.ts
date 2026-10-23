@@ -1,85 +1,139 @@
 /**
- * The ONE design system for the whole app — the Farmer set, "Agri-Logistics
- * Standard" (docs/DESIGN.md, ADR-017).
- *
- * Inter only. Primary Green #0d631b, Secondary Green #2e7d32. Radii 8 / 16 / 24.
- * No second theme object, no per-role override map, no role-conditional styling.
- * If a value is not in here, it does not go on screen.
+ * Shared ChaiUI tokens for the native app. Dark is the default. The app follows
+ * the device appearance so the same screens remain readable in light mode.
  */
-import { Platform, type TextStyle, type ViewStyle } from 'react-native';
+import { Appearance, type TextStyle, type ViewStyle } from 'react-native';
 
-export const colors = {
-  primary: '#0d631b',
-  onPrimary: '#ffffff',
-  primaryContainer: '#2e7d32',
-  onPrimaryContainer: '#cbffc2',
+const darkColors = {
+  primary: '#f5f5f5',
+  onPrimary: '#f5f5f5',
+  primaryContainer: '#181818',
+  onPrimaryContainer: '#f5f5f5',
 
-  secondary: '#006e1c',
-  onSecondary: '#ffffff',
-  secondaryContainer: '#91f78e',
-  onSecondaryContainer: '#00731e',
+  secondary: '#e5e5e5',
+  onSecondary: '#0a0a0a',
+  secondaryContainer: '#202020',
+  onSecondaryContainer: '#e5e5e5',
 
-  tertiary: '#734e00',
-  onTertiary: '#ffffff',
-  tertiaryContainer: '#926500',
-  onTertiaryContainer: '#ffefda',
+  tertiary: '#ffedd5',
+  onTertiary: '#171717',
+  tertiaryContainer: '#252018',
+  onTertiaryContainer: '#ffedd5',
 
-  error: '#ba1a1a',
-  onError: '#ffffff',
-  errorContainer: '#ffdad6',
-  onErrorContainer: '#93000a',
+  error: '#fca5a5',
+  onError: '#171717',
+  errorContainer: '#2a1717',
+  onErrorContainer: '#fca5a5',
 
-  surface: '#f8faf8',
-  background: '#f8faf8',
-  surfaceContainerLowest: '#ffffff',
-  surfaceContainerLow: '#f2f4f2',
-  surfaceContainer: '#eceeec',
-  surfaceContainerHigh: '#e6e9e7',
-  surfaceContainerHighest: '#e1e3e1',
-  surfaceVariant: '#e1e3e1',
+  surface: '#0a0a0a',
+  background: '#0a0a0a',
+  surfaceContainerLowest: '#101010',
+  surfaceContainerLow: '#121212',
+  surfaceContainer: '#171717',
+  surfaceContainerHigh: '#1d1d1d',
+  surfaceContainerHighest: '#242424',
+  surfaceVariant: '#242424',
 
-  onSurface: '#191c1b',
-  onSurfaceVariant: '#40493d',
-  outline: '#707a6c',
-  outlineVariant: '#bfcaba',
+  onSurface: '#f5f5f5',
+  onSurfaceVariant: '#b3b3b3',
+  outline: '#85817b',
+  outlineVariant: '#393631',
 
-  inverseSurface: '#2e3130',
-  inverseOnSurface: '#eff1ef',
-  surfaceTint: '#1b6d24',
+  inverseSurface: '#f5f5f5',
+  inverseOnSurface: '#171717',
+  surfaceTint: '#f5f5f5',
 
-  // status badge pairs (docs/DESIGN.md §6)
-  infoContainer: '#dbe9ff',
-  onInfoContainer: '#0b3a75',
-  warningContainer: '#ffefda',
-  onWarningContainer: '#604100',
+  infoContainer: '#17191c',
+  onInfoContainer: '#bfdbfe',
+  warningContainer: '#1d1a15',
+  onWarningContainer: '#fcd34d',
+  statusSuccess: '#86efac',
+  statusWarning: '#fcd34d',
+  statusDanger: '#fca5a5',
+  statusInfo: '#bfdbfe',
 } as const;
 
-/** Inter is the only family. Loaded in app/_layout.tsx; falls back to the system face. */
-export const fontFamily = Platform.select({
-  ios: 'Inter',
-  android: 'Inter',
-  default: 'Inter',
-}) as string;
+const lightColors = {
+  primary: '#171717',
+  onPrimary: '#171717',
+  primaryContainer: '#f1f0ed',
+  onPrimaryContainer: '#171717',
+
+  secondary: '#404040',
+  onSecondary: '#ffffff',
+  secondaryContainer: '#efeeeb',
+  onSecondaryContainer: '#262626',
+
+  tertiary: '#854d0e',
+  onTertiary: '#ffffff',
+  tertiaryContainer: '#f5eee3',
+  onTertiaryContainer: '#854d0e',
+
+  error: '#b91c1c',
+  onError: '#ffffff',
+  errorContainer: '#fef2f2',
+  onErrorContainer: '#991b1b',
+
+  surface: '#faf9f6',
+  background: '#faf9f6',
+  surfaceContainerLowest: '#ffffff',
+  surfaceContainerLow: '#f7f6f3',
+  surfaceContainer: '#f2f1ee',
+  surfaceContainerHigh: '#ebe9e5',
+  surfaceContainerHighest: '#e5e2dd',
+  surfaceVariant: '#e5e2dd',
+
+  onSurface: '#171717',
+  onSurfaceVariant: '#5b5a57',
+  outline: '#77736d',
+  outlineVariant: '#ded9d0',
+
+  inverseSurface: '#262626',
+  inverseOnSurface: '#f5f5f5',
+  surfaceTint: '#171717',
+
+  infoContainer: '#f1f3f5',
+  onInfoContainer: '#1d4ed8',
+  warningContainer: '#f7f3ea',
+  onWarningContainer: '#854d0e',
+  statusSuccess: '#15803d',
+  statusWarning: '#854d0e',
+  statusDanger: '#b91c1c',
+  statusInfo: '#1d4ed8',
+} as const;
+
+const initialColorScheme = Appearance.getColorScheme() ?? 'dark';
+export const colors = initialColorScheme === 'light' ? lightColors : darkColors;
+export const isDarkMode = initialColorScheme !== 'light';
+
+export const fontFamily = 'Manrope_400Regular';
+export const cardTitleFamily = 'Montserrat_600SemiBold';
+export const highlightFamily = 'Montserrat_500Medium';
+export const wordmarkFamily = 'Onest_500Medium';
 
 export const type = {
   displayLg: {
-    fontFamily,
+    fontFamily: 'Manrope_700Bold',
     fontSize: 32,
     fontWeight: '700',
     lineHeight: 40,
     letterSpacing: -0.64,
   },
-  headlineLg: { fontFamily, fontSize: 24, fontWeight: '600', lineHeight: 32 },
-  headlineMd: { fontFamily, fontSize: 20, fontWeight: '600', lineHeight: 28 },
-  bodyLg: { fontFamily, fontSize: 16, fontWeight: '400', lineHeight: 24 },
-  bodyMd: { fontFamily, fontSize: 14, fontWeight: '400', lineHeight: 20 },
-  labelLg: { fontFamily, fontSize: 14, fontWeight: '600', lineHeight: 20, letterSpacing: 0.14 },
-  labelSm: { fontFamily, fontSize: 12, fontWeight: '500', lineHeight: 16 },
-  /** the English gloss under a Marathi headline-md label */
-  bilingualSubtext: { fontFamily, fontSize: 13, fontWeight: '400', lineHeight: 18 },
+  headlineLg: { fontFamily: 'Manrope_600SemiBold', fontSize: 24, fontWeight: '600', lineHeight: 32 },
+  headlineMd: { fontFamily: 'Manrope_600SemiBold', fontSize: 20, fontWeight: '600', lineHeight: 28 },
+  bodyLg: { fontFamily: 'Manrope_400Regular', fontSize: 16, fontWeight: '400', lineHeight: 24 },
+  bodyMd: { fontFamily: 'Manrope_400Regular', fontSize: 14, fontWeight: '400', lineHeight: 20 },
+  labelLg: {
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+    letterSpacing: 0.14,
+  },
+  labelSm: { fontFamily: 'Manrope_500Medium', fontSize: 12, fontWeight: '500', lineHeight: 16 },
+  bilingualSubtext: { fontFamily: 'Manrope_400Regular', fontSize: 13, fontWeight: '400', lineHeight: 18 },
 } satisfies Record<string, TextStyle>;
 
-/** 4px baseline grid. */
 export const space = {
   xs: 4,
   sm: 8,
@@ -89,7 +143,6 @@ export const space = {
   xl: 32,
 } as const;
 
-/** 8px buttons/inputs · 16px cards · 24px banners and sheets. */
 export const radius = {
   sm: 4,
   base: 8,
@@ -99,34 +152,30 @@ export const radius = {
   full: 9999,
 } as const;
 
-/** Diffused, green-tinted — never neutral black against the warm ground. */
+/** Depth comes from the surface fill and its warm hairline, with no shadows. */
 export const elevation = {
   level0: {} as ViewStyle,
-  level1: {
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-  } as ViewStyle,
-  level2: {
-    shadowColor: colors.primaryContainer,
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
-  } as ViewStyle,
+  level1: {} as ViewStyle,
+  level2: {} as ViewStyle,
 } as const;
 
-/** 16px edge margin, 48px minimum touch target — one-handed, outdoors. */
 export const layout = {
   edgeMargin: space.md,
   minTouchTarget: 48,
-  /** height of <BottomNav />; screens that show it reserve this much scroll padding */
   navHeight: 72,
-  /** the AI mic FAB sits just above the nav bar (Stitch: bottom-20 right-4) */
   fabOffset: 88,
 } as const;
 
-export const theme = { colors, fontFamily, type, space, radius, elevation, layout } as const;
+export const theme = {
+  colors,
+  fontFamily,
+  cardTitleFamily,
+  highlightFamily,
+  wordmarkFamily,
+  type,
+  space,
+  radius,
+  elevation,
+  layout,
+} as const;
 export default theme;

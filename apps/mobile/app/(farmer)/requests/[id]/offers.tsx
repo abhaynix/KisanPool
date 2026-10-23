@@ -1,16 +1,16 @@
 /**
- * F4 · Smart Pool Match — the transporters who ACCEPTED this request.
+ * F4 · Smart Pool Match , the transporters who ACCEPTED this request.
  *
  * The decision point of the whole app, and the screen where the pooling model is
  * easiest to get wrong. Every one of these transporters has accepted; none of
  * them is booked; none of them has reserved a gram of capacity. Choosing is what
- * creates the booking — so the header says so, each card is labelled "Accepted",
+ * creates the booking , so the header says so, each card is labelled "Accepted",
  * and the CTA is "Confirm", never "Book" or "Accept".
  *
  * Deliberate divergence from the Stitch export: it shows a fixed "Farmer share
  * 60% / Transporter share 40%" split, which the pricing model replaced (ADR-031)
  * with a route cost shared by weight across everyone aboard. Showing the old
- * split would be a made-up number, so the breakdown here is the real one — your
+ * split would be a made-up number, so the breakdown here is the real one , your
  * share, what going alone would cost, and what the pool saves you.
  */
 import { useCallback, useState } from 'react';
@@ -77,7 +77,7 @@ export default function SmartPoolMatch() {
   const detail = useLoader(
     useCallback(async () => {
       const [request, claims] = await Promise.all([api.getRequest(id), api.offersFor(id)]);
-      // already confirmed — there is nothing left to compare, the trip is the screen
+      // already confirmed , there is nothing left to compare, the trip is the screen
       if (request.trip) {
         router.replace(`/(farmer)/trips/${request.trip._id}`);
       }
@@ -86,7 +86,7 @@ export default function SmartPoolMatch() {
     }, [id, router]),
   );
 
-  // acceptances arrive while the farmer is looking — no refresh, no refetch
+  // acceptances arrive while the farmer is looking , no refresh, no refetch
   useSocket(
     { type: 'request', id },
     {
@@ -145,7 +145,7 @@ export default function SmartPoolMatch() {
               That vehicle filled up
             </Txt>
             <Txt variant="bodyMd" color={colors.onErrorContainer} style={{ marginTop: space.xs }}>
-              Another farmer confirmed the last space while you were choosing. Nothing was charged —
+              Another farmer confirmed the last space while you were choosing. Nothing was charged ,
               the list below is up to date, please pick someone else.
             </Txt>
           </Banner>
@@ -161,8 +161,8 @@ export default function SmartPoolMatch() {
           <EmptyState
             icon="hourglass-empty"
             title="No transporter has accepted yet"
-            message="Your request is in the pool and verified drivers nearby can see it. We'll notify you the moment someone accepts — you can close the app."
-            action={<Button label="Check again" icon="refresh" onPress={detail.refresh} />}
+            message="Your request is in the pool and verified drivers nearby can see it. We'll notify you the moment someone accepts , you can close the app."
+            action={<Button label="Check again" icon="refresh" onPress={detail.refresh}  variant="primary"/>}
           />
         ) : (
           <>
@@ -175,7 +175,7 @@ export default function SmartPoolMatch() {
                     {offers.length} transporter{offers.length === 1 ? '' : 's'} accepted
                   </Txt>
                   <Txt variant="labelSm" color={colors.onPrimaryContainer}>
-                    Awaiting your confirmation — nothing is booked until you choose one.
+                    Awaiting your confirmation , nothing is booked until you choose one.
                   </Txt>
                 </View>
               </View>
@@ -228,7 +228,7 @@ export default function SmartPoolMatch() {
                         </Txt>
                       </View>
                       <Txt variant="labelSm" color={colors.onSurfaceVariant} style={{ marginTop: 2 }}>
-                        {vehicle?.registrationNumber ?? '—'} · {vehicle?.vehicleType ?? '—'}
+                        {vehicle?.registrationNumber ?? ','} · {vehicle?.vehicleType ?? ','}
                       </Txt>
                     </View>
                     <View style={{ alignItems: 'center' }}>
@@ -256,7 +256,7 @@ export default function SmartPoolMatch() {
                     <ProgressTrack pct={freePct} height={8} />
                   </View>
 
-                  {/* the saving is the headline — it is why pooling exists */}
+                  {/* the saving is the headline , it is why pooling exists */}
                   <View style={s.priceBlock}>
                     <Txt variant="labelLg" color={colors.onPrimaryContainer}>
                       You save {offer.savingPct}%
@@ -278,7 +278,7 @@ export default function SmartPoolMatch() {
                     <Txt variant="labelSm" color={colors.onPrimaryContainer}>
                       {offer.poolSize > 0
                         ? `Joining ${offer.poolSize} other farmer${offer.poolSize > 1 ? 's' : ''} on this vehicle`
-                        : 'You would be first aboard — the price falls further as others join'}
+                        : 'You would be first aboard , the price falls further as others join'}
                     </Txt>
                   </View>
 
@@ -310,7 +310,7 @@ export default function SmartPoolMatch() {
                     disabled={selecting !== null && selecting !== offer._id}
                     onPress={() => setConfirming(offer)}
                     style={{ marginTop: space.gutter }}
-                  />
+                   variant="secondary"/>
                 </Card>
               );
             })}
@@ -318,7 +318,7 @@ export default function SmartPoolMatch() {
             <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'flex-start' }}>
               <MaterialIcons name="info" size={18} color={colors.onSurfaceVariant} />
               <Txt variant="labelSm" color={colors.onSurfaceVariant} style={{ flex: 1 }}>
-                Confirming is free — you pay only after your produce is delivered, and your share
+                Confirming is free , you pay only after your produce is delivered, and your share
                 can still fall if more farmers join the same vehicle.
               </Txt>
             </View>
@@ -326,7 +326,7 @@ export default function SmartPoolMatch() {
         )}
       </Screen>
 
-      {/* the moment a booking is actually created — worth a confirmation step */}
+      {/* the moment a booking is actually created , worth a confirmation step */}
       <ConfirmDialog
         visible={confirming !== null}
         title={`Confirm ${confirming?.transporter?.name ?? 'this transporter'}?`}

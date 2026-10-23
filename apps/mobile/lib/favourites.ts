@@ -1,5 +1,5 @@
 /**
- * Favourite mandis — a starred shortlist the farmer builds.
+ * Favourite mandis , a starred shortlist the farmer builds.
  *
  * Local to the device on purpose: the backend has no favourites collection and
  * adding one is not worth a migration for this. Everything else the app shows

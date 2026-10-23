@@ -1,5 +1,5 @@
 /**
- * f0.4b_machine_register — the machinery/service provider's onboarding step.
+ * f0.4b_machine_register , the machinery/service provider's onboarding step.
  *
  * A provider is a FARMER account (ADR-038: owning a machine is a fact about the
  * data, not a new role), so instead of "your default pickup" this collects the
@@ -92,7 +92,7 @@ export default function MachineRegister() {
   return (
     <Screen
       footer={
-        <Button label="List my machine" loading={busy} disabled={!valid} onPress={() => void save()} />
+        <Button label="List my machine" loading={busy} disabled={!valid} onPress={() => void save()}  variant="primary"/>
       }
     >
       <Header title="List your machine" subtitle="तुमचं यंत्र नोंदवा" onBack={() => router.back()} />
@@ -202,7 +202,7 @@ export default function MachineRegister() {
       />
       <Txt variant="labelSm" color={colors.onSurfaceVariant} style={{ marginBottom: space.md }}>
         When several nearby farmers book the same day, KisanPool splits this travel charge across
-        their jobs — more work for you, lower cost for each of them.
+        their jobs , more work for you, lower cost for each of them.
       </Txt>
 
       <LocationPicker

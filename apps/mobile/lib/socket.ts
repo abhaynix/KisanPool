@@ -5,7 +5,7 @@ import { getAccessToken } from './session';
 
 /**
  * One socket per screen that needs it; disconnected on unmount. The JWT rides in
- * the handshake — the same token REST uses (docs/API_CONTRACTS.md §3).
+ * the handshake , the same token REST uses (docs/API_CONTRACTS.md §3).
  */
 export function useSocket(
   room: { type: 'request' | 'trip'; id: string } | null,

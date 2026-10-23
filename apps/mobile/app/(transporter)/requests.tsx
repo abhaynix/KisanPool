@@ -1,5 +1,5 @@
 /**
- * Transporter · Requests — the load pool.
+ * Transporter · Requests , the load pool.
  *
  * ACCEPTING IS NOT BOOKING. Several transporters may accept the same load; the
  * farmer compares everyone who did and picks one. Only that pick reserves
@@ -7,7 +7,7 @@
  * so, because the wording is the only thing standing between a driver and the
  * wrong mental model.
  *
- * A driver may accept as many compatible loads as they like — the accepted total
+ * A driver may accept as many compatible loads as they like , the accepted total
  * is tracked and shown, but it is never subtracted from available capacity.
  */
 import { useCallback, useMemo, useState } from 'react';
@@ -56,7 +56,7 @@ const compare: Record<Sort, (a: PoolEntry, b: PoolEntry) => number> = {
   earning: (a, b) => b.transporterEarning - a.transporterEarning,
 };
 
-/** A fit score turned into words — a driver reads "high match", not "0.87". */
+/** A fit score turned into words , a driver reads "high match", not "0.87". */
 function matchLabel(score: number): { label: string; tone: string } {
   const pct = Math.round(score * 100);
   if (pct >= 85) return { label: 'High match', tone: 'SELECTED' };
@@ -73,7 +73,7 @@ export default function Requests() {
   const [goingOnline, setGoingOnline] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [toastTone, setToastTone] = useState<'success' | 'error'>('success');
-  /** loads accepted in this session — the row turns into a waiting state, not a booking */
+  /** loads accepted in this session , the row turns into a waiting state, not a booking */
   const [accepted, setAccepted] = useState<string[]>([]);
   const [rowError, setRowError] = useState<{ requestId: string; message: string } | null>(null);
 
@@ -136,7 +136,7 @@ export default function Requests() {
       setAccepting(null);
       setMessage('');
       setToastTone('success');
-      setToast('Accepted — the farmer will now compare and decide');
+      setToast('Accepted , the farmer will now compare and decide');
       void pool.reconcile();
     } catch (err) {
       // CAPACITY_EXCEEDED carries the exact kg; show it on the row that failed
@@ -172,7 +172,7 @@ export default function Requests() {
                 loading={goingOnline}
                 disabled={!vehicle}
                 onPress={() => void goOnline()}
-              />
+               variant="primary"/>
             }
           />
         ) : (
@@ -203,7 +203,7 @@ export default function Requests() {
 
               {poolData?.trip ? (
                 <Txt variant="labelSm" color={colors.onSurfaceVariant} style={{ marginTop: space.xs }}>
-                  Your trip is going to {poolData.trip.trip.destination.name} — only loads on that
+                  Your trip is going to {poolData.trip.trip.destination.name} , only loads on that
                   route show here.
                 </Txt>
               ) : (
@@ -218,7 +218,7 @@ export default function Requests() {
                 <MaterialIcons name="info" size={20} color={colors.onInfoContainer} />
                 <Txt variant="bodyMd" color={colors.onInfoContainer} style={{ flex: 1 }}>
                   Accepting is not a booking. The farmer sees every driver who accepted and chooses
-                  one — accept as many loads as you like.
+                  one , accept as many loads as you like.
                 </Txt>
               </View>
             </Banner>
@@ -236,8 +236,8 @@ export default function Requests() {
               <EmptyState
                 icon="local-shipping"
                 title="No loads on your route right now"
-                message="Farmers post through the day. We'll notify you the moment one appears near you — you can keep the app closed."
-                action={<Button label="Check again" icon="refresh" onPress={pool.refresh} />}
+                message="Farmers post through the day. We'll notify you the moment one appears near you , you can keep the app closed."
+                action={<Button label="Check again" icon="refresh" onPress={pool.refresh}  variant="secondary"/>}
               />
             ) : (
               entries.map((entry) => {
@@ -321,12 +321,12 @@ export default function Requests() {
                     ) : null}
 
                     {waiting ? (
-                      // accepted — and explicitly NOT a booking
+                      // accepted , and explicitly NOT a booking
                       <View style={s.waiting}>
                         <MaterialIcons name="hourglass-empty" size={20} color={colors.onWarningContainer} />
                         <View style={{ flex: 1 }}>
                           <Txt variant="labelLg" color={colors.onWarningContainer}>
-                            Accepted — awaiting the farmer
+                            Accepted , awaiting the farmer
                           </Txt>
                           <Txt variant="bodyMd" color={colors.onWarningContainer}>
                             Nothing is reserved yet. They are comparing every driver who accepted.
@@ -351,7 +351,7 @@ export default function Requests() {
                           setAccepting(entry);
                         }}
                         style={{ marginTop: space.gutter }}
-                      />
+                       variant="secondary"/>
                     )}
                   </Card>
                 );
@@ -402,7 +402,7 @@ export default function Requests() {
             loading={busy}
             onPress={() => accepting && void accept(accepting, message)}
             style={{ flex: 1 }}
-          />
+           variant="secondary"/>
         </View>
       </Sheet>
 
@@ -454,7 +454,9 @@ const s = {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     gap: space.sm,
-    backgroundColor: colors.warningContainer,
+    backgroundColor: colors.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
     borderRadius: radius.md,
     padding: space.gutter,
     marginTop: space.gutter,

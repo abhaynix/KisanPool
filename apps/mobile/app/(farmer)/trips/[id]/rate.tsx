@@ -1,7 +1,7 @@
 /**
  * Rate the driver after delivery.
  *
- * A rating belongs to one shipment, not the whole shared trip — several farmers
+ * A rating belongs to one shipment, not the whole shared trip , several farmers
  * rode the same vehicle and each rates their own leg (ADR-030).
  */
 import { useCallback, useEffect, useState } from 'react';
@@ -82,7 +82,7 @@ export default function RateDriver() {
           loading={busy}
           disabled={alreadyRated || !shipmentId}
           onPress={() => void submit()}
-        />
+         variant="primary"/>
       }
     >
       <Header

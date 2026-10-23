@@ -1,4 +1,4 @@
-/** f0.2_role_selection — sets User.role, which is permanent for the MVP (ADR-002). */
+/** f0.2_role_selection , sets User.role, which is permanent for the MVP (ADR-002). */
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -66,7 +66,7 @@ export default function RoleSelection() {
               },
             })
           }
-        />
+         variant="primary"/>
       }
     >
       <Header title="Who are you?" subtitle="तुम्ही कोण आहात?" onBack={() => router.back()} />
@@ -102,7 +102,7 @@ export default function RoleSelection() {
               <View style={{ flex: 1 }}>
                 <Txt variant="headlineMd">{card.native}</Txt>
                 <Txt variant="bilingualSubtext" color={colors.onSurfaceVariant}>
-                  {card.english} — {card.blurb}
+                  {card.english} , {card.blurb}
                 </Txt>
               </View>
             </View>

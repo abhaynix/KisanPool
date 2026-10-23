@@ -1,5 +1,5 @@
 /**
- * rate_farmers — a driver carried several farmers on one trip, so a rating belongs
+ * rate_farmers , a driver carried several farmers on one trip, so a rating belongs
  * to a shipment, not to the trip. Each leg is rated separately, or not at all.
  */
 import { useCallback, useEffect, useState } from 'react';
@@ -26,7 +26,7 @@ import { colors, space } from '../../../../theme';
 
 type TripDetail = Awaited<ReturnType<typeof api.getTrip>>;
 
-/** Only a load that actually arrived can be rated — the server enforces the same list. */
+/** Only a load that actually arrived can be rated , the server enforces the same list. */
 const RATABLE = ['DELIVERED', 'PAYMENT_PENDING', 'PAID', 'COMPLETED'];
 
 const WORDS = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
@@ -66,7 +66,7 @@ export default function RateFarmers() {
       await api.rate(shipmentId, stars[shipmentId] ?? 5, comments[shipmentId]?.trim() || undefined);
       setRated((prev) => [...prev, shipmentId]);
     } catch (err) {
-      // BOOKING_ALREADY_RATED is not a failure the driver can act on — say it once
+      // BOOKING_ALREADY_RATED is not a failure the driver can act on , say it once
       const appError = toAppError(err);
       if (appError.code === 'BOOKING_ALREADY_RATED') setRated((prev) => [...prev, shipmentId]);
       else setRowError({ shipmentId, message: appError.message });
@@ -84,7 +84,7 @@ export default function RateFarmers() {
           label="Done"
           icon="check"
           onPress={() => router.replace('/(transporter)/home')}
-        />
+         variant="primary"/>
       }
     >
       <Header
@@ -124,7 +124,7 @@ export default function RateFarmers() {
 
               {isRated ? (
                 <Txt variant="bodyMd" color={colors.onSurfaceVariant} style={{ marginTop: space.sm }}>
-                  Rated. Thank you — this is what other drivers see.
+                  Rated. Thank you , this is what other drivers see.
                 </Txt>
               ) : (
                 <>
@@ -163,7 +163,7 @@ export default function RateFarmers() {
                     icon="star"
                     loading={busy === shipment._id}
                     onPress={() => void submit(shipment._id)}
-                  />
+                   variant="secondary"/>
                 </>
               )}
             </Card>

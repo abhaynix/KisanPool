@@ -1,4 +1,4 @@
-/** f0.3_mobile_verification — phone + 6-digit OTP. */
+/** f0.3_mobile_verification , phone + 6-digit OTP. */
 import { useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -80,14 +80,14 @@ export default function Verify() {
             loading={busy}
             disabled={code.length !== 6}
             onPress={() => void verify()}
-          />
+           variant="primary"/>
         ) : (
           <Button
             label="Send OTP"
             loading={busy}
             disabled={phone.length !== 10}
             onPress={() => void sendOtp()}
-          />
+           variant="secondary"/>
         )
       }
     >

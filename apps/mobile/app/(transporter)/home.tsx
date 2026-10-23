@@ -1,5 +1,5 @@
 /**
- * Transporter · Dashboard — "am I available, what fits, what am I doing next?"
+ * Transporter · Dashboard , "am I available, what fits, what am I doing next?"
  *
  * The old screen was the whole app: availability, capacity, earnings, the load
  * pool, my claims, the vehicle record and the payouts link all on one scroll.
@@ -100,7 +100,7 @@ export default function TransporterDashboard() {
   const openTrip = trips.find((trip) => OPEN_TRIP_STATES.includes(trip.state as never));
   const completedCount = trips.filter((trip) => trip.state === 'COMPLETED').length;
 
-  // weight this driver has claimed that no farmer has confirmed — not reserved
+  // weight this driver has claimed that no farmer has confirmed , not reserved
   const acceptedKg = acceptedKgFrom(offers);
   const awaitingFarmer = offers.filter((offer) => offer.state === 'INTERESTED').length;
 
@@ -137,7 +137,7 @@ export default function TransporterDashboard() {
       const updated = await api.setAvailability(vehicle._id, next ? 'AVAILABLE' : 'OFFLINE');
       setVehicle(updated);
       setToastTone('success');
-      setToast(next ? "You're online — loads will appear in Requests" : "You're offline");
+      setToast(next ? "You're online , loads will appear in Requests" : "You're offline");
     } catch (err) {
       setToastTone('error');
       setToast(toAppError(err).message);
@@ -170,7 +170,7 @@ export default function TransporterDashboard() {
           <ErrorView error={dash.error} onRetry={dash.refresh} />
         ) : (
           <>
-            {/* no vehicle at all — a real state with a way out, not a blank screen */}
+            {/* no vehicle at all , a real state with a way out, not a blank screen */}
             {!vehicle ? (
               <Banner tone="warning">
                 <View style={{ flexDirection: 'row', gap: space.sm }}>
@@ -180,7 +180,7 @@ export default function TransporterDashboard() {
                       No vehicle registered yet
                     </Txt>
                     <Txt variant="bodyMd" color={colors.onWarningContainer}>
-                      Register your vehicle and get it verified — loads can only be offered to a
+                      Register your vehicle and get it verified , loads can only be offered to a
                       verified vehicle.
                     </Txt>
                     <Button
@@ -259,6 +259,16 @@ export default function TransporterDashboard() {
                 />
               </View>
             </Card>
+            <Button
+              label={online ? 'Explore load requests' : 'Go online to see requests'}
+              icon={online ? 'local-shipping' : 'wifi'}
+              variant="primary"
+              disabled={!verified || toggling}
+              onPress={() =>
+                online ? router.push('/(transporter)/requests') : void toggleAvailability(true)
+              }
+              style={{ marginBottom: space.md }}
+            />
 
             {/* how much have I earned? */}
             <Card
@@ -414,6 +424,7 @@ export default function TransporterDashboard() {
                   icon="navigation"
                   onPress={() => router.push(`/(transporter)/trips/${openTrip._id}`)}
                   style={{ marginTop: space.gutter }}
+                  variant="secondary"
                 />
               </Card>
             ) : (
@@ -428,7 +439,7 @@ export default function TransporterDashboard() {
                   style={{ textAlign: 'center', marginTop: space.xs }}
                 >
                   {online
-                    ? 'Accept a load from Requests — your first confirmed farmer starts the trip.'
+                    ? 'Accept a load from Requests , your first confirmed farmer starts the trip.'
                     : 'Go online to start seeing loads on your route.'}
                 </Txt>
                 <Button
@@ -438,7 +449,7 @@ export default function TransporterDashboard() {
                     online ? router.push('/(transporter)/requests') : void toggleAvailability(true)
                   }
                   style={{ marginTop: space.gutter, alignSelf: 'stretch' }}
-                />
+                 variant="secondary"/>
               </Card>
             )}
 
@@ -485,7 +496,9 @@ const s = {
     flexDirection: 'row' as const,
     alignItems: 'flex-start' as const,
     gap: space.sm,
-    backgroundColor: colors.warningContainer,
+    backgroundColor: colors.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
     borderRadius: radius.md,
     padding: space.gutter,
     marginTop: space.sm,

@@ -1,5 +1,5 @@
 /**
- * shared_trip — one vehicle, many farmers, one mandi.
+ * shared_trip , one vehicle, many farmers, one mandi.
  *
  * The trip and each farmer's shipment advance on separate state machines: the
  * driver may have collected two loads and still be en route to a third, so a
@@ -24,6 +24,7 @@ import { InsightCard } from '../../../../components/InsightCard';
 import { ServiceBanner, useServiceStatus } from '../../../../components/ServiceBanner';
 import { getUser } from '../../../../lib/session';
 import { toAppError } from '../../../../lib/errors';
+import { useReducedMotion } from '../../../../lib/useReducedMotion';
 import { kg, rupees } from '../../../../lib/format';
 import { ledgerFrom, ledgerSegments, usedPct } from '../../../../lib/pooling';
 import { SUPPORT_PHONE } from '../../../../lib/support';
@@ -74,22 +75,23 @@ const TRIP_LABEL: Record<TripState, string> = {
   CANCELLED: 'Cancelled',
 };
 
-/** The one step forward from each shipment state — the rest of the machine is the server's. */
+/** The one step forward from each shipment state , the rest of the machine is the server's. */
 const SHIPMENT_NEXT: Partial<Record<ShipmentState, { to: ShipmentState; label: string }>> = {
   ASSIGNED: { to: 'EN_ROUTE', label: 'Heading to this pickup' },
   EN_ROUTE: { to: 'ARRIVED', label: 'I have arrived' },
   ARRIVED: { to: 'PICKED_UP', label: 'Collect with the farmer’s code' },
-  PICKED_UP: { to: 'IN_TRANSIT', label: 'Loaded — moving on' },
+  PICKED_UP: { to: 'IN_TRANSIT', label: 'Loaded , moving on' },
   IN_TRANSIT: { to: 'DELIVERED', label: 'Delivered at the mandi' },
 };
 
 const TRIP_NEXT: Partial<Record<TripState, { to: TripState; label: string }>> = {
-  FORMING: { to: 'EN_ROUTE', label: 'Start the trip — no more loads' },
-  EN_ROUTE: { to: 'IN_TRANSIT', label: 'All collected — drive to the mandi' },
+  FORMING: { to: 'EN_ROUTE', label: 'Start the trip , no more loads' },
+  EN_ROUTE: { to: 'IN_TRANSIT', label: 'All collected , drive to the mandi' },
   IN_TRANSIT: { to: 'AT_DESTINATION', label: 'Arrived at the mandi' },
 };
 
 export default function SharedTrip() {
+  const reducedMotion = useReducedMotion();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
 
@@ -117,7 +119,7 @@ export default function SharedTrip() {
     try {
       setDetail(await api.getTrip(id));
       setMyId((await getUser())?._id ?? '');
-      // advisory delay + cancellation risk — best-effort, never blocks the trip
+      // advisory delay + cancellation risk , best-effort, never blocks the trip
       api.tripPrediction(id).then(setPrediction).catch(() => setPrediction(null));
     } catch (err) {
       setError(err);
@@ -273,19 +275,19 @@ export default function SharedTrip() {
             label={tripNext.label}
             loading={busy === 'trip'}
             onPress={() => void advanceTrip(tripNext.to)}
-          />
+           variant="primary"/>
         ) : trip.state === 'AT_DESTINATION' ? (
           <Button
             label="Finish and bill"
             icon="check-circle"
             onPress={() => router.push(`/(transporter)/trips/${id}/complete`)}
-          />
+           variant="secondary"/>
         ) : trip.state === 'COMPLETED' ? (
           <Button
             label="Rate the farmers"
             icon="star"
             onPress={() => router.push(`/(transporter)/trips/${id}/rate`)}
-          />
+           variant="secondary"/>
         ) : null
       }
     >
@@ -355,10 +357,10 @@ export default function SharedTrip() {
 
       {error ? <ErrorView error={error} onRetry={() => void load()} /> : null}
 
-      {/* honest status during an incident — silent when everything is normal */}
+      {/* honest status during an incident , silent when everything is normal */}
       <ServiceBanner status={serviceStatus} />
 
-      {/* advisory risk — each renders only for MEDIUM/HIGH (ADR-041) */}
+      {/* advisory risk , each renders only for MEDIUM/HIGH (ADR-041) */}
       <InsightCard assessment={prediction?.delay} title="Possible delivery delay" />
       <InsightCard assessment={prediction?.cancellation} title="Cancellation risk" minLevel="HIGH" />
 
@@ -412,7 +414,7 @@ export default function SharedTrip() {
             <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center' }}>
               <MaterialIcons name="warning" size={20} color={colors.onErrorContainer} />
               <Txt variant="labelLg" color={colors.onErrorContainer} style={{ flex: 1 }}>
-                Loaded weight is over your rated capacity — do not take more.
+                Loaded weight is over your rated capacity , do not take more.
               </Txt>
             </View>
           </Banner>
@@ -426,7 +428,7 @@ export default function SharedTrip() {
         )}
       </Card>
 
-      {/* the trip's money — the SAME numbers every farmer aboard is splitting */}
+      {/* the trip's money , the SAME numbers every farmer aboard is splitting */}
       {detail.pricing ? (
         <Card>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -458,7 +460,7 @@ export default function SharedTrip() {
           <Row label="Remaining capacity" value={kg(capacity.availableKg)} bold />
 
           <Txt variant="labelSm" color={colors.outline} style={{ marginTop: space.sm }}>
-            Every farmer aboard pays a slice of the {rupees(detail.pricing.totalCost)} above —
+            Every farmer aboard pays a slice of the {rupees(detail.pricing.totalCost)} above ,
             their own detour, plus a share of the shared run by tonne-kilometres. Take another
             load and this grows.
           </Txt>
@@ -469,7 +471,7 @@ export default function SharedTrip() {
         The return journey.
 
         Offered only once every farmer's load is delivered, which is the same gate
-        the server enforces — a driver should never be invited to think about the
+        the server enforces , a driver should never be invited to think about the
         way home while produce is still aboard.
       */}
       {allDelivered ? (
@@ -484,7 +486,7 @@ export default function SharedTrip() {
                 Don't drive back empty
               </Txt>
               <Txt variant="labelSm" color={colors.onSurfaceVariant}>
-                Every load is delivered. There may be goods going your way — carrying one turns
+                Every load is delivered. There may be goods going your way , carrying one turns
                 the run home into earning.
               </Txt>
             </View>
@@ -495,11 +497,11 @@ export default function SharedTrip() {
             icon="u-turn-left"
             onPress={() => router.push(`/(transporter)/trips/${id}/return`)}
             style={{ marginTop: space.gutter }}
-          />
+           variant="secondary"/>
         </Card>
       ) : null}
 
-      {/* a delivery hands the space back — the pool is where it gets used again */}
+      {/* a delivery hands the space back , the pool is where it gets used again */}
       {canAddMore ? (
         <Banner tone={freedSpace ? 'primary' : 'info'}>
           <View style={{ flexDirection: 'row', gap: space.sm }}>
@@ -564,13 +566,13 @@ export default function SharedTrip() {
         <EmptyState
           icon="inventory-2"
           title="No loads yet"
-          message="Claim loads from the pool — a farmer choosing you puts their produce on this trip."
+          message="Claim loads from the pool , a farmer choosing you puts their produce on this trip."
           action={
             <Button
               label="Open the load pool"
               icon="local-shipping"
               onPress={() => router.push('/(transporter)/requests')}
-            />
+             variant="secondary"/>
           }
         />
       ) : (
@@ -664,7 +666,7 @@ export default function SharedTrip() {
                       void advanceShipment(shipment, next.to);
                     }}
                     style={{ flex: 2 }}
-                  />
+                   variant="secondary"/>
                 ) : null}
               </View>
             </Card>
@@ -680,7 +682,7 @@ export default function SharedTrip() {
       <Modal
         visible={otpFor !== null}
         transparent
-        animationType="slide"
+        animationType={reducedMotion ? 'none' : 'slide'}
         onRequestClose={() => setOtpFor(null)}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(25,28,27,0.4)', justifyContent: 'flex-end' }}>
@@ -723,7 +725,7 @@ export default function SharedTrip() {
                 disabled={otp.trim().length !== 4}
                 onPress={() => otpFor && void advanceShipment(otpFor, 'PICKED_UP', otp.trim())}
                 style={{ flex: 1 }}
-              />
+               variant="secondary"/>
             </View>
           </View>
         </View>

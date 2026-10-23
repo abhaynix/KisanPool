@@ -18,6 +18,7 @@ import type { Socket } from 'socket.io-client';
 import type { ChatMessageDTO } from '@kisanpool/shared';
 import { api } from '../lib/api';
 import { colors, layout, radius, space, type } from '../theme';
+import { useReducedMotion } from '../lib/useReducedMotion';
 import { Txt } from './ui';
 
 interface Message {
@@ -42,6 +43,7 @@ export function ChatSheet({
   socket: Socket | null;
   otherPartyName: string;
 }) {
+  const reducedMotion = useReducedMotion();
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const listRef = useRef<FlatList<Message>>(null);
@@ -85,7 +87,7 @@ export function ChatSheet({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType={reducedMotion ? 'none' : 'slide'} transparent onRequestClose={onClose}>
       <View style={s.backdrop}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -107,7 +109,7 @@ export function ChatSheet({
             data={messages}
             keyExtractor={(item) => item._id}
             contentContainerStyle={{ padding: layout.edgeMargin, gap: space.sm }}
-            onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+            onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: !reducedMotion })}
             renderItem={({ item }) => {
               const mine = item.senderId === myUserId;
               return (
@@ -132,7 +134,7 @@ export function ChatSheet({
                 color={colors.onSurfaceVariant}
                 style={{ textAlign: 'center', paddingVertical: space.xl }}
               >
-                Say hello — messages appear here.
+                Say hello , messages appear here.
               </Txt>
             }
           />
@@ -161,7 +163,7 @@ const s = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(25,28,27,0.4)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: colors.background,
-    borderTopLeftRadius: radius.xl, // 24px — sheet tier
+    borderTopLeftRadius: radius.xl, // 24px , sheet tier
     borderTopRightRadius: radius.xl,
     maxHeight: '80%',
     minHeight: '55%',

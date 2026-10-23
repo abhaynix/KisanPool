@@ -1,12 +1,31 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useFonts } from 'expo-font';
+import {
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+} from '@expo-google-fonts/manrope';
+import { Montserrat_500Medium, Montserrat_600SemiBold } from '@expo-google-fonts/montserrat';
+import { Onest_500Medium } from '@expo-google-fonts/onest';
 import { colors } from '../theme';
 
 export default function RootLayout() {
+  useFonts({
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Montserrat_500Medium,
+    Montserrat_600SemiBold,
+    Onest_500Medium,
+  });
+
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" backgroundColor={colors.background} />
+      <StatusBar style={colors.background === '#0a0a0a' ? 'light' : 'dark'} backgroundColor={colors.background} />
       <Stack
         screenOptions={{
           headerShown: false,

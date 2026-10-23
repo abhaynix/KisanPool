@@ -1,5 +1,5 @@
 /**
- * Pick a location by name, by search, on the map, or from GPS — and edit it
+ * Pick a location by name, by search, on the map, or from GPS , and edit it
  * before it is used.
  *
  * THE BUG THIS EXISTS TO FIX
@@ -70,9 +70,9 @@ export function LocationPicker({
         try {
           const hits = await api.searchPlaces(text, draft ?? initial ?? null);
           setResults(hits);
-          if (!hits.length) setNote('No match — type a nearby town, or tap the map.');
+          if (!hits.length) setNote('No match , type a nearby town, or tap the map.');
         } catch {
-          setNote('Search is unavailable right now — tap the map to place the pin.');
+          setNote('Search is unavailable right now , tap the map to place the pin.');
         } finally {
           setSearching(false);
         }
@@ -211,12 +211,12 @@ export function LocationPicker({
         </View>
       ) : (
         <Txt variant="labelSm" color={colors.onSurfaceVariant} style={{ marginVertical: space.sm }}>
-          Use GPS, search, or tap the map once a point is chosen — you can edit it before
+          Use GPS, search, or tap the map once a point is chosen , you can edit it before
           confirming.
         </Txt>
       )}
 
-      <Button label={confirmLabel} icon="check" disabled={!draft} onPress={confirm} />
+      <Button label={confirmLabel} icon="check" disabled={!draft} onPress={confirm} variant="primary" />
     </Sheet>
   );
 }

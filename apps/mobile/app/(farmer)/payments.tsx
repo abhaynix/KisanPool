@@ -1,5 +1,5 @@
 /**
- * Payments passbook — what was paid, and what sharing the vehicle saved.
+ * Payments passbook , what was paid, and what sharing the vehicle saved.
  *
  * Billing is per delivered shipment now, so every row is one load on one shared
  * trip, with the solo price it was measured against (ADR-031).

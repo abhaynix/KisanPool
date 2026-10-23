@@ -1,11 +1,11 @@
 /**
- * Farm Services — my hires, and my machines' inbox.
+ * Farm Services , my hires, and my machines' inbox.
  *
  * Both sides on one screen, behind two tabs, because in this product they are the
  * same person. The farmer who hires a harvester in June is the one hiring out his
  * own tractor in November, and giving each side its own screen would have meant
- * building the provider half twice — once for "farmers who own machines" and once
- * for hiring centres — when they are identical.
+ * building the provider half twice , once for "farmers who own machines" and once
+ * for hiring centres , when they are identical.
  *
  * The tab only appears when the user actually owns a machine. Nobody should meet
  * an empty "incoming requests" tab they have no way to fill.
@@ -83,7 +83,7 @@ export default function ServiceBookings() {
   const needsAnswer = providing.filter((b) => b.state === 'REQUESTED').length;
 
   /**
-   * Not-yet-grouped REQUESTED jobs on the same machine, same day — candidates the
+   * Not-yet-grouped REQUESTED jobs on the same machine, same day , candidates the
    * provider could serve in one outing so travel splits (ADR-042). The server
    * re-checks the real proximity/window; this is just the affordance.
    */
@@ -104,7 +104,7 @@ export default function ServiceBookings() {
     try {
       await api.groupMachineBookings(rows.map((r) => r._id));
       setToastTone('success');
-      setToast('Jobs grouped — travel cost is now shared across them.');
+      setToast('Jobs grouped , travel cost is now shared across them.');
       data.refresh();
     } catch (err) {
       setToastTone('error');
@@ -199,7 +199,7 @@ export default function ServiceBookings() {
                   label="Browse farm services"
                   icon="search"
                   onPress={() => router.replace('/(farmer)/services')}
-                />
+                 variant="primary"/>
               }
             />
           ) : (
@@ -238,7 +238,7 @@ export default function ServiceBookings() {
                     </View>
                     <Txt variant="bodyMd" color={colors.onSurfaceVariant} style={{ marginTop: space.xs }}>
                       Serve them in one outing and the travel cost splits across all{' '}
-                      {rows.length} — lower for each farmer, same drive for you.
+                      {rows.length} , lower for each farmer, same drive for you.
                     </Txt>
                     <Button
                       label="Group & share travel"
@@ -246,7 +246,7 @@ export default function ServiceBookings() {
                       loading={grouping}
                       onPress={() => void groupCluster(rows)}
                       style={{ marginTop: space.gutter }}
-                    />
+                     variant="secondary"/>
                   </Card>
                 ))
               : null}
@@ -315,12 +315,12 @@ export default function ServiceBookings() {
                             )} total earning`
                           : `Shared with ${booking.group.size - 1} nearby ${
                               booking.group.size - 1 === 1 ? 'job' : 'jobs'
-                            } — travel split ${booking.group.size} ways`}
+                            } , travel split ${booking.group.size} ways`}
                       </Txt>
                     </View>
                   ) : null}
 
-                  {/* the farmer's start code — never shown to the provider */}
+                  {/* the farmer's start code , never shown to the provider */}
                   {tab === 'hired' && booking.startOtp && booking.state === 'CONFIRMED' ? (
                     <View style={s.otpCard}>
                       <Txt variant="labelSm" color={colors.onPrimaryContainer}>
@@ -361,7 +361,7 @@ export default function ServiceBookings() {
                         loading={busy === booking._id}
                         onPress={() => void advance(booking, 'CONFIRMED')}
                         style={{ flex: 1 }}
-                      />
+                       variant="secondary"/>
                     </View>
                   ) : tab === 'providing' && booking.state === 'CONFIRMED' ? (
                     <Button
@@ -374,7 +374,7 @@ export default function ServiceBookings() {
                         setOtpFor(booking);
                       }}
                       style={{ marginTop: space.gutter }}
-                    />
+                     variant="secondary"/>
                   ) : tab === 'providing' && booking.state === 'IN_PROGRESS' ? (
                     <Button
                       label="Work finished"
@@ -382,7 +382,7 @@ export default function ServiceBookings() {
                       loading={busy === booking._id}
                       onPress={() => void advance(booking, 'COMPLETED')}
                       style={{ marginTop: space.gutter }}
-                    />
+                     variant="secondary"/>
                   ) : tab === 'hired' && ['REQUESTED', 'CONFIRMED'].includes(booking.state) ? (
                     <Button
                       label="Cancel this booking"
@@ -430,7 +430,7 @@ export default function ServiceBookings() {
             disabled={otp.trim().length !== 4}
             onPress={() => otpFor && void advance(otpFor, 'IN_PROGRESS', { otp: otp.trim() })}
             style={{ flex: 1 }}
-          />
+           variant="secondary"/>
         </View>
       </Sheet>
 

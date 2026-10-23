@@ -1,5 +1,5 @@
 /**
- * Transporter · Earnings — today, in total, and where every rupee came from.
+ * Transporter · Earnings , today, in total, and where every rupee came from.
  *
  * Replaces the old payouts passbook, which was a total and a flat list buried
  * behind a card on the dashboard. Earnings is a product area: it has to answer
@@ -42,7 +42,7 @@ type Tab = 'all' | 'settled' | 'pending';
  *
  * This used to be inferred from the presence of a `transferId` plus a raw status
  * string, which could not tell "waiting on your onboarding" apart from "Razorpay
- * refused it" — two things a driver needs to respond to very differently. The
+ * refused it" , two things a driver needs to respond to very differently. The
  * server now decides the state; this only names it.
  */
 function transferState(payout: Payout): { badge: string; label: string; settled: boolean } {
@@ -115,7 +115,7 @@ export default function Earnings() {
           <ErrorView error={data.error} onRetry={data.refresh} />
         ) : (
           <>
-            {/* today leads — it is the number a driver checks between trips */}
+            {/* today leads , it is the number a driver checks between trips */}
             <Card
               style={{
                 backgroundColor: colors.primaryContainer,
@@ -191,7 +191,7 @@ export default function Earnings() {
                     label="Find loads"
                     icon="local-shipping"
                     onPress={() => router.push('/(transporter)/requests')}
-                  />
+                   variant="primary"/>
                 }
               />
             ) : visible.length === 0 ? (
@@ -224,7 +224,7 @@ export default function Earnings() {
                             numberOfLines={1}
                             style={{ maxWidth: 100 }}
                           >
-                            {payout.from ?? '—'}
+                            {payout.from ?? ','}
                           </Txt>
                           <MaterialIcons name="arrow-right-alt" size={14} color={colors.outline} />
                           <Txt
@@ -233,7 +233,7 @@ export default function Earnings() {
                             numberOfLines={1}
                             style={{ flex: 1 }}
                           >
-                            {payout.to ?? '—'}
+                            {payout.to ?? ','}
                           </Txt>
                         </View>
                         <Txt variant="labelSm" color={colors.outline} style={{ marginTop: 2 }}>
@@ -255,7 +255,7 @@ export default function Earnings() {
                         Transfers settle shortly after the farmer pays.
                       </Txt>
                     )}
-                    {/* why it has not landed — the driver can usually act on this */}
+                    {/* why it has not landed , the driver can usually act on this */}
                     {!state.settled && payout.payoutNote ? (
                       <Txt variant="labelSm" color={colors.onSurfaceVariant} style={{ marginTop: space.xs }}>
                         {payout.payoutNote}

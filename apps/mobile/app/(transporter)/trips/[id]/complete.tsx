@@ -1,10 +1,10 @@
 /**
- * trip_completion_billing — what each farmer owes for their leg, the trip total,
+ * trip_completion_billing , what each farmer owes for their leg, the trip total,
  * and the one action that closes the trip.
  *
  * The bill is per shipment, not per trip: each load's price froze at its own
  * delivery, so a farmer who joined late never pays for the leg they missed. There
- * is no proof-of-delivery photo any more — the farmer's pickup code is what proves
+ * is no proof-of-delivery photo any more , the farmer's pickup code is what proves
  * the right produce moved.
  */
 import { useCallback, useEffect, useState } from 'react';
@@ -70,7 +70,7 @@ export default function CompleteTrip() {
       await api.setTripState(id, 'COMPLETED');
       await load();
     } catch (err) {
-      // BOOKING_STATE_INVALID counts the loads still aboard — pass that through
+      // BOOKING_STATE_INVALID counts the loads still aboard , pass that through
       setBlocked(toAppError(err).message);
     } finally {
       setBusy(false);
@@ -111,7 +111,7 @@ export default function CompleteTrip() {
             label="Rate the farmers"
             icon="star"
             onPress={() => router.replace(`/(transporter)/trips/${id}/rate`)}
-          />
+           variant="primary"/>
         ) : (
           <Button
             label="Complete this trip"
@@ -120,7 +120,7 @@ export default function CompleteTrip() {
             // the server is the authority; this only avoids an obvious wasted tap
             disabled={outstanding.length > 0}
             onPress={() => void complete()}
-          />
+           variant="secondary"/>
         )
       }
     >

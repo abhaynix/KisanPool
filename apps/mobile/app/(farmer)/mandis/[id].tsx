@@ -1,5 +1,5 @@
 /**
- * F3 · Mandi details — is this the right market to send my produce to?
+ * F3 · Mandi details , is this the right market to send my produce to?
  *
  * Hero, open/closed state, the three facts that describe the yard, today's price
  * table with a trend per commodity, why this mandi, and a pinned "Select this
@@ -52,7 +52,7 @@ const TREND_COLOR: Record<Trend, string> = {
 };
 
 /**
- * "Why this mandi?" — the demand tile has to tell the truth.
+ * "Why this mandi?" , the demand tile has to tell the truth.
  *
  * These four were hardcoded, so every market claimed "High demand" including
  * Solapur, which this app's own data marks LOW and whose card two screens back
@@ -96,7 +96,7 @@ export default function MandiDetails() {
         );
         setFavourite(ids.includes(id));
       } catch {
-        // local storage only — the screen renders fine without either
+        // local storage only , the screen renders fine without either
       }
     })();
   }, [id]);
@@ -117,7 +117,7 @@ export default function MandiDetails() {
           icon="search-off"
           title="Mandi not found"
           message="That market is not in our list any more."
-          action={<Button label="Browse mandis" onPress={() => router.replace('/(farmer)/mandis')} />}
+          action={<Button label="Browse mandis" onPress={() => router.replace('/(farmer)/mandis')}  variant="primary"/>}
         />
       </Screen>
     );
@@ -143,7 +143,7 @@ export default function MandiDetails() {
                   },
                 })
               }
-            />
+             variant="secondary"/>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs, justifyContent: 'center', marginTop: space.sm }}>
               <MaterialIcons name="lock" size={14} color={colors.outline} />
               <Txt variant="labelSm" color={colors.outline}>
@@ -172,22 +172,22 @@ export default function MandiDetails() {
           </Txt>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.sm }}>
-            <View style={[s.pill, { backgroundColor: open ? colors.secondaryContainer : colors.surfaceContainerHigh }]}>
+            <View style={[s.pill, { borderColor: open ? colors.statusSuccess : colors.outlineVariant }]}>
               <View
                 style={{
                   width: 6,
                   height: 6,
                   borderRadius: radius.full,
-                  backgroundColor: open ? colors.primary : colors.outline,
+                  backgroundColor: open ? colors.statusSuccess : colors.outline,
                 }}
               />
-              <Txt variant="labelSm" color={open ? colors.onSecondaryContainer : colors.onSurfaceVariant}>
+              <Txt variant="labelSm" color={open ? colors.statusSuccess : colors.onSurfaceVariant}>
                 {open ? `Open now · closes ${closingLabel(mandi)}` : `Closed · opens ${mandi.hours.split('–')[0].trim()}`}
               </Txt>
             </View>
 
             {distanceKm != null ? (
-              <View style={[s.pill, { backgroundColor: colors.surfaceContainerLow }]}>
+              <View style={[s.pill, { borderColor: colors.outlineVariant }]}>
                 <MaterialIcons name="directions-car" size={14} color={colors.onSurfaceVariant} />
                 <Txt variant="labelSm" color={colors.onSurfaceVariant}>
                   {km(distanceKm)} · {durationLabel(travelMinutes(distanceKm))}
@@ -195,9 +195,9 @@ export default function MandiDetails() {
               </View>
             ) : null}
 
-            <View style={[s.pill, { backgroundColor: colors.warningContainer }]}>
-              <MaterialIcons name="trending-up" size={14} color={colors.onWarningContainer} />
-              <Txt variant="labelSm" color={colors.onWarningContainer}>
+            <View style={[s.pill, { borderColor: colors.statusWarning }]}>
+              <MaterialIcons name="trending-up" size={14} color={colors.statusWarning} />
+              <Txt variant="labelSm" color={colors.statusWarning}>
                 {DEMAND_LABEL[mandi.demand]}
               </Txt>
             </View>
@@ -319,7 +319,8 @@ const s = {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     gap: space.xs,
-    borderRadius: radius.full,
+    borderRadius: radius.sm,
+    borderWidth: 1,
     paddingHorizontal: space.sm,
     paddingVertical: space.xs,
   },

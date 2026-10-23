@@ -1,5 +1,5 @@
 /**
- * My machines — turning an idle asset into supply.
+ * My machines , turning an idle asset into supply.
  *
  * This is the screen the whole Farm Resource Network exists for. A tractor in a
  * Maharashtra village works perhaps twenty days a year and is parked for the other
@@ -8,7 +8,7 @@
  * truck, applied to the other machine standing idle in the yard.
  *
  * Deliberately small. No fleet management, no maintenance logs, no utilisation
- * dashboards — a farmer with one tractor needs to say what it is, what they charge
+ * dashboards , a farmer with one tractor needs to say what it is, what they charge
  * and how far they will travel, and then be left alone until someone books it.
  */
 import { useCallback, useState } from 'react';
@@ -93,7 +93,7 @@ export default function MyMachines() {
 
   const save = async (): Promise<void> => {
     if (!base) {
-      setFormError('Set your location in Profile first — it is where the machine is based.');
+      setFormError('Set your location in Profile first , it is where the machine is based.');
       return;
     }
     setBusy(true);
@@ -120,7 +120,7 @@ export default function MyMachines() {
       setMinimumCharge('');
       setTravelRate('');
       setToastTone('success');
-      setToast('Your machine is listed — farmers nearby can find it now');
+      setToast('Your machine is listed , farmers nearby can find it now');
       data.refresh();
     } catch (err) {
       setFormError(toAppError(err).message);
@@ -133,7 +133,7 @@ export default function MyMachines() {
     try {
       await api.updateMachine(id, { status: paused ? 'LISTED' : 'PAUSED' });
       setToastTone('success');
-      setToast(paused ? 'Listed again' : 'Paused — no new bookings');
+      setToast(paused ? 'Listed again' : 'Paused , no new bookings');
       data.refresh();
     } catch (err) {
       setToastTone('error');
@@ -156,7 +156,7 @@ export default function MyMachines() {
               setFormError(undefined);
               setFormOpen(true);
             }}
-          />
+           variant="primary"/>
         }
       >
         <Header
@@ -265,7 +265,7 @@ export default function MyMachines() {
               />
               {machine.status === 'PAUSED' ? (
                 <Txt variant="labelSm" color={colors.outline} style={{ marginTop: space.xs }}>
-                  Bookings already accepted still stand — pausing only stops new ones.
+                  Bookings already accepted still stand , pausing only stops new ones.
                 </Txt>
               ) : null}
             </Card>
@@ -277,7 +277,7 @@ export default function MyMachines() {
         visible={formOpen}
         onClose={() => setFormOpen(false)}
         title="List a machine"
-        subtitle="You set the price. KisanPool never marks it up — it takes a commission from the total."
+        subtitle="You set the price. KisanPool never marks it up , it takes a commission from the total."
       >
         <Txt variant="labelLg" color={colors.onSurfaceVariant}>
           What is it?
@@ -368,7 +368,7 @@ export default function MyMachines() {
         ) : (
           <Banner tone="warning" style={{ marginBottom: space.sm }}>
             <Txt variant="bodyMd" color={colors.onWarningContainer}>
-              Set your location in Profile first — it is where the machine is based.
+              Set your location in Profile first , it is where the machine is based.
             </Txt>
           </Banner>
         )}
@@ -379,7 +379,7 @@ export default function MyMachines() {
           loading={busy}
           disabled={!valid || !base}
           onPress={() => void save()}
-        />
+         variant="secondary"/>
       </Sheet>
 
       <Toast message={toast} tone={toastTone} onHide={() => setToast(null)} />

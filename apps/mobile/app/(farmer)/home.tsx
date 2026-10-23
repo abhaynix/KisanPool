@@ -1,9 +1,9 @@
 /**
- * F1 · Farmer Home — the entry screen, not a dashboard.
+ * F1 · Farmer Home , the entry screen, not a dashboard.
  *
  * Home answers one question: "what should I do next?" Everything that is a
- * product area of its own — the full booking list, mandi discovery, support, the
- * profile — lives behind the bottom navigation. Home only carries the greeting,
+ * product area of its own , the full booking list, mandi discovery, support, the
+ * profile , lives behind the bottom navigation. Home only carries the greeting,
  * the primary action, whatever is live right now, and shortcuts.
  */
 import { useCallback, useEffect, useState } from 'react';
@@ -91,32 +91,39 @@ export default function FarmerHome() {
           </>
         }
       >
-        {/* hero — greeting and the one action this app exists for */}
+        {/* hero , greeting and the one action this app exists for */}
         <View style={{ marginTop: space.sm }}>
           <Card
             raised
             style={{
-              backgroundColor: colors.primary,
-              borderColor: colors.primary,
-              borderRadius: 24,
+              backgroundColor: colors.surfaceContainerLow,
+              borderColor: colors.outlineVariant,
+              borderRadius: 16,
               padding: space.md,
             }}
           >
-            <Txt variant="displayLg" color={colors.onPrimary}>
+            <Txt variant="displayLg" color={colors.onSurface}>
               Hello, {firstName}! 👋
             </Txt>
-            <Txt variant="bilingualSubtext" color={colors.onPrimaryContainer}>
+            <Txt variant="bilingualSubtext" color={colors.tertiary}>
               आजचा दिवस कसा आहे!
             </Txt>
 
             <Txt
               variant="labelSm"
-              color={colors.onPrimaryContainer}
+              color={colors.onSurfaceVariant}
               style={{ marginTop: space.md }}
             >
-              KisanPool shares what is already there — a truck with space in it, and a
+              KisanPool shares what is already there , a truck with space in it, and a
               machine standing idle.
             </Txt>
+            <Button
+              label="Create a transport request"
+              icon="arrow-forward"
+              variant="primary"
+              onPress={() => router.push('/(farmer)/requests/new')}
+              style={{ marginTop: space.md }}
+            />
           </Card>
         </View>
 
@@ -171,6 +178,7 @@ export default function FarmerHome() {
             action={
               <Button
                 label="Transport produce"
+                variant="secondary"
                 onPress={() => router.push('/(farmer)/requests/new')}
               />
             }
@@ -196,7 +204,7 @@ export default function FarmerHome() {
                       {r.cropType} · {kg(r.quantityKg)}
                     </Txt>
                     <Txt variant="labelSm" color={colors.onSurfaceVariant} numberOfLines={1}>
-                      {r.destination?.name ?? '—'} · {shortDate(r.preferredDate ?? r.createdAt)}
+                      {r.destination?.name ?? ','} · {shortDate(r.preferredDate ?? r.createdAt)}
                     </Txt>
                   </View>
                   <StatusBadge status={copy.badge} label={copy.label} />
@@ -206,7 +214,7 @@ export default function FarmerHome() {
           })
         )}
 
-        {/* big CTA pair — move produce / farm services */}
+        {/* big CTA pair , move produce / farm services */}
         <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.md }}>
           <Card
             style={{ flex: 1, borderColor: colors.primary, borderWidth: 2 }}
@@ -220,7 +228,7 @@ export default function FarmerHome() {
               माल पाठवा
             </Txt>
             <Txt variant="labelSm" color={colors.onSurfaceVariant} style={{ marginTop: space.xs }}>
-              Share a vehicle to the mandi — the more farmers aboard, the less each pays.
+              Share a vehicle to the mandi , the more farmers aboard, the less each pays.
             </Txt>
           </Card>
 
@@ -241,7 +249,7 @@ export default function FarmerHome() {
           </Card>
         </View>
 
-        {/* awaiting confirmation — the decision only the farmer can make */}
+        {/* awaiting confirmation , the decision only the farmer can make */}
         {awaitingConfirmation.length > 0 && (
           <>
             <SectionHeader title="Awaiting your confirmation" />
@@ -267,7 +275,7 @@ export default function FarmerHome() {
                   icon="compare-arrows"
                   onPress={() => router.push(`/(farmer)/requests/${a._id}/offers`)}
                   style={{ marginTop: space.gutter }}
-                />
+                 variant="secondary"/>
               </Card>
             ))}
           </>
@@ -318,11 +326,11 @@ export default function FarmerHome() {
                       }}
                     >
                       <Txt variant="labelLg" numberOfLines={1} style={{ maxWidth: 110 }}>
-                        {l.pickup?.name ?? '—'}
+                        {l.pickup?.name ?? ','}
                       </Txt>
                       <MaterialIcons name="arrow-right-alt" size={16} color={colors.outline} />
                       <Txt variant="labelLg" numberOfLines={1} style={{ flex: 1 }}>
-                        {l.destination?.name ?? '—'}
+                        {l.destination?.name ?? ','}
                       </Txt>
                     </View>
                     <Txt variant="labelSm" color={colors.onSurfaceVariant}>

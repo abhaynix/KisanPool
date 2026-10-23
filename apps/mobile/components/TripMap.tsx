@@ -33,7 +33,7 @@ export function TripMap({
   polyline?: Array<{ latitude: number; longitude: number }> | null;
   height?: number;
   onMarkerPress?: (index: number) => void;
-  /** tap anywhere on the map — used by the location picker to move the pin */
+  /** tap anywhere on the map , used by the location picker to move the pin */
   onPress?: (point: { lat: number; lng: number }) => void;
   /** let the user drag the pickup pin to fine-tune it */
   draggablePickup?: boolean;
@@ -56,7 +56,7 @@ export function TripMap({
    *
    * Keying the effect on `points.length` looked equivalent and was not: switching
    * the mandi filter from one category to another with the same number of markers
-   * — Fruits and Grains both have three — left the length identical, so the effect
+   * , Fruits and Grains both have three , left the length identical, so the effect
    * never re-ran and the map stayed framed on the markets the farmer had just
    * filtered away. The pins themselves redrew, which made it look like stale
    * markers were stuck on the map.

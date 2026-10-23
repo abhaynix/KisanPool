@@ -1,5 +1,5 @@
 /**
- * The Farm Resource Network's vocabulary — every label the app is allowed to use.
+ * The Farm Resource Network's vocabulary , every label the app is allowed to use.
  *
  * Same job as lib/pooling.ts does for produce transport: the words a farmer reads
  * live in one file, so a state cannot be described one way on the discovery screen
@@ -8,7 +8,7 @@
  * THE RULE THIS FILE ENFORCES
  * ---------------------------
  * A machine REQUESTED is a slot HELD, not a job confirmed. That is the opposite
- * of the transport side, where a transporter's acceptance reserves nothing — and
+ * of the transport side, where a transporter's acceptance reserves nothing , and
  * the difference is deliberate, because there is no pool of providers to compare
  * afterwards. The copy has to make that plain to both sides: the farmer must not
  * assume the tractor is coming, and the provider must know the slot is theirs to
@@ -91,7 +91,7 @@ export const MACHINE_ICON: Record<MachineCategory, Icon> = {
   OTHER: 'build',
 };
 
-/** The categories a farmer sees first — the ones actually hired most. */
+/** The categories a farmer sees first , the ones actually hired most. */
 export const POPULAR_CATEGORIES: MachineCategory[] = [
   'TRACTOR_TROLLEY',
   'COMBINE_HARVESTER',
@@ -130,7 +130,7 @@ export const OPERATOR_LABEL: Record<OperatorMode, string> = {
 export const BOOKING_COPY: Record<MachineBookingState, StateCopy> = {
   REQUESTED: {
     label: 'Waiting for the provider',
-    // the slot IS held — say so, or the farmer books three tractors "to be safe"
+    // the slot IS held , say so, or the farmer books three tractors "to be safe"
     detail: 'Your slot is held while the provider answers. Nobody else can take this time.',
     badge: 'PENDING',
   },
@@ -157,7 +157,7 @@ export const BOOKING_COPY: Record<MachineBookingState, StateCopy> = {
   },
   DECLINED: {
     label: 'Provider could not take it',
-    detail: 'The slot is free again — try another provider or another time.',
+    detail: 'The slot is free again , try another provider or another time.',
     badge: 'REJECTED',
   },
 };
@@ -193,7 +193,7 @@ export const PROVIDER_COPY: Record<MachineBookingState, StateCopy> = {
   },
 };
 
-/** States where a booking is still going to happen — what "upcoming" means. */
+/** States where a booking is still going to happen , what "upcoming" means. */
 export const LIVE_BOOKING_STATES: MachineBookingState[] = [
   'REQUESTED',
   'CONFIRMED',
@@ -232,7 +232,7 @@ export const RETURN_LEG_COPY: Record<ReturnLegState, StateCopy> = {
   },
   OPEN: {
     label: 'Looking for return loads',
-    detail: 'You are driving back anyway — anything you take now is extra earning.',
+    detail: 'You are driving back anyway , anything you take now is extra earning.',
     badge: 'SEARCHING',
   },
   LOADING: {
@@ -265,12 +265,12 @@ export const BACKHAUL_COPY: Record<BackhaulBookingState, StateCopy> = {
   CANCELLED: { label: 'Cancelled', detail: 'This return load came off the leg.', badge: 'CANCELLED' },
 };
 
-/** The one step forward from each backhaul state — the rest of the machine is the server's. */
+/** The one step forward from each backhaul state , the rest of the machine is the server's. */
 export const BACKHAUL_NEXT: Partial<
   Record<BackhaulBookingState, { to: BackhaulBookingState; label: string }>
 > = {
   BOOKED: { to: 'PICKED_UP', label: 'Collect with the sender’s code' },
-  PICKED_UP: { to: 'IN_TRANSIT', label: 'Loaded — heading home' },
+  PICKED_UP: { to: 'IN_TRANSIT', label: 'Loaded , heading home' },
   IN_TRANSIT: { to: 'DELIVERED', label: 'Delivered' },
 };
 
@@ -278,7 +278,7 @@ export const BACKHAUL_NEXT: Partial<
 // small helpers the screens share
 // ---------------------------------------------------------------------------
 
-/** "Tue 2 Sep, 7:00 – 11:00 am" — one line for a booking window. */
+/** "Tue 2 Sep, 7:00 – 11:00 am" , one line for a booking window. */
 export function windowLabel(start: string | Date, end: string | Date): string {
   const from = new Date(start);
   const to = new Date(end);

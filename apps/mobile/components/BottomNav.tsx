@@ -4,13 +4,13 @@
  * FARMER       Home · Bookings · Mandi · Support · Profile
  * TRANSPORTER  Dashboard · Requests · Trips · Earnings · Profile
  *
- * These five are the app's product areas — they are NOT sections of one screen.
+ * These five are the app's product areas , they are NOT sections of one screen.
  * The previous build had no navigation at all, so Home and Dashboard had grown
  * into single screens containing every feature; splitting them is the whole point
  * of this component (Stitch F1 / transporter_dashboard bottom bars).
  *
  * Sub-pages (a trip, a mandi, the new-request form) deliberately do not render it
- * — the Stitch exports suppress the bar on any screen reached by a back arrow.
+ * , the Stitch exports suppress the bar on any screen reached by a back arrow.
  */
 import { memo, useEffect } from 'react';
 import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
@@ -75,7 +75,7 @@ function BottomNavImpl({
     if (active === root.key) return;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       router.replace(root.href as never);
-      return true; // handled — do not fall through to "exit app"
+      return true; // handled , do not fall through to "exit app"
     });
     return () => subscription.remove();
   }, [active, root, router]);
@@ -92,7 +92,7 @@ function BottomNavImpl({
             accessibilityRole="tab"
             accessibilityState={{ selected }}
             accessibilityLabel={item.label}
-            // replace, not push — tabs are siblings, so the back stack stays flat
+            // replace, not push , tabs are siblings, so the back stack stays flat
             onPress={() => (selected ? null : router.replace(item.href as never))}
             style={({ pressed }) => [
               s.item,
@@ -141,18 +141,10 @@ const s = StyleSheet.create({
     justifyContent: 'space-around',
     paddingTop: space.sm,
     paddingHorizontal: space.xs,
-    backgroundColor: colors.surfaceContainerLowest,
+    backgroundColor: colors.background,
     borderTopWidth: 1,
     borderTopColor: colors.outlineVariant,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    // the bar overlays the scroll view, so it has to win touch dispatch on both
-    // platforms: zIndex orders it on iOS, elevation does the same on Android
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 12,
+    zIndex: 2,
   },
   item: {
     flex: 1,
@@ -164,7 +156,7 @@ const s = StyleSheet.create({
     paddingVertical: space.xs,
     marginHorizontal: 2,
   },
-  itemActive: { backgroundColor: colors.secondaryContainer },
+  itemActive: { backgroundColor: 'transparent' },
   badge: {
     position: 'absolute',
     top: -5,

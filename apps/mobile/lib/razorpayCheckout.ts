@@ -19,7 +19,7 @@ export interface CheckoutOptions {
 /**
  * Thin wrapper around the native Razorpay sheet. Resolves with the signature
  * triple, or throws PAYMENT_FAILED when the farmer dismisses or the payment fails.
- * The app never sees the card — Razorpay owns the instrument entirely.
+ * The app never sees the card , Razorpay owns the instrument entirely.
  */
 export async function openCheckout(options: CheckoutOptions): Promise<CheckoutResult> {
   // Demo mode: no Razorpay keys configured on the server. The signature check is

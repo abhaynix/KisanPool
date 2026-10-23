@@ -1,11 +1,11 @@
 /**
- * Servo AI — the voice round trip from docs/DESIGN.md §9.3:
+ * Servo AI , the voice round trip from docs/DESIGN.md §9.3:
  *   record -> /ai/stt -> /ai/chat -> /ai/tts -> navigate
  *
  * Every state has a visual, not just audio. The transcript is shown so a
  * mis-transcription is visible, a pending confirmation is shown as text so a
  * farmer in a noisy field can read what they are agreeing to, and the flow always
- * stops at the checkout handoff — it never pays (ADR-014).
+ * stops at the checkout handoff , it never pays (ADR-014).
  */
 import { useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
@@ -16,6 +16,7 @@ import type { AiChatResponse, Language } from '@kisanpool/shared';
 import { api } from '../lib/api';
 import { toAppError } from '../lib/errors';
 import { colors, elevation, layout, radius, space } from '../theme';
+import { useReducedMotion } from '../lib/useReducedMotion';
 import { Button, Txt } from './ui';
 
 type VoiceState = 'idle' | 'listening' | 'transcribing' | 'thinking' | 'speaking' | 'error';
@@ -30,6 +31,7 @@ const STATE_LABEL: Record<VoiceState, string> = {
 };
 
 export function VoiceAssistantButton({ language = 'en' }: { language?: Language }) {
+  const reducedMotion = useReducedMotion();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<VoiceState>('idle');
@@ -97,7 +99,7 @@ export function VoiceAssistantButton({ language = 'en' }: { language?: Language 
     setReply(answer.reply);
     setPending(answer.pendingConfirmation);
 
-    // speak the reply — a failure here is not fatal, the text is already on screen
+    // speak the reply , a failure here is not fatal, the text is already on screen
     try {
       setState('speaking');
       const { audio } = await api.tts(answer.reply, answer.language);
@@ -107,7 +109,7 @@ export function VoiceAssistantButton({ language = 'en' }: { language?: Language 
       sound.current = playback;
       await playback.playAsync();
     } catch {
-      // silent — the reply is displayed
+      // silent , the reply is displayed
     }
 
     setState('idle');
@@ -146,7 +148,7 @@ export function VoiceAssistantButton({ language = 'en' }: { language?: Language 
         <MaterialIcons name="mic" size={28} color={colors.onPrimary} />
       </Pressable>
 
-      <Modal visible={open} animationType="slide" transparent onRequestClose={close}>
+      <Modal visible={open} animationType={reducedMotion ? 'none' : 'slide'} transparent onRequestClose={close}>
         <View style={s.backdrop}>
           <View style={s.sheet}>
             <View style={s.headerRow}>
@@ -181,7 +183,7 @@ export function VoiceAssistantButton({ language = 'en' }: { language?: Language 
             {/* a state-changing action, shown as text before it happens */}
             {pending ? (
               <View style={s.confirmRow}>
-                <Button label="Yes, go ahead" onPress={() => void confirm('yes')} icon="check" />
+                <Button label="Yes, go ahead" onPress={() => void confirm('yes')} icon="check" variant="primary" />
                 <Button
                   label="No"
                   variant="secondary"
@@ -218,7 +220,7 @@ export function VoiceAssistantButton({ language = 'en' }: { language?: Language 
             )}
 
             <Txt variant="labelSm" color={colors.onSurfaceVariant} style={s.disclaimer}>
-              Servo AI never takes payment — it hands you to the payment screen.
+              Servo AI never takes payment , it hands you to the payment screen.
             </Txt>
           </View>
         </View>

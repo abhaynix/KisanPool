@@ -1,7 +1,7 @@
 /**
  * A compact advisory card for a Predictive Insight (ADR-041).
  *
- * It states a level, the reasons behind it, and nothing else — no action button,
+ * It states a level, the reasons behind it, and nothing else , no action button,
  * because a prediction never acts. It renders only for MEDIUM/HIGH by default
  * (`minLevel`), so it never competes with the primary trip flow when there is
  * nothing to say.
@@ -14,10 +14,10 @@ import { colors, radius, space } from '../theme';
 
 const RANK: Record<RiskLevel, number> = { LOW: 0, MEDIUM: 1, HIGH: 2 };
 
-const TONE: Record<RiskLevel, { bg: string; fg: string; icon: 'info' | 'warning' | 'error' }> = {
-  LOW: { bg: colors.surfaceContainerLow, fg: colors.onSurfaceVariant, icon: 'info' },
-  MEDIUM: { bg: colors.warningContainer, fg: colors.onWarningContainer, icon: 'warning' },
-  HIGH: { bg: colors.errorContainer, fg: colors.onErrorContainer, icon: 'error' },
+const TONE: Record<RiskLevel, { fg: string; icon: 'info' | 'warning' | 'error' }> = {
+  LOW: { fg: colors.onSurfaceVariant, icon: 'info' },
+  MEDIUM: { fg: colors.statusWarning, icon: 'warning' },
+  HIGH: { fg: colors.statusDanger, icon: 'error' },
 };
 
 const LEVEL_WORD: Record<RiskLevel, string> = {
@@ -46,7 +46,9 @@ export function InsightCard({
   return (
     <View
       style={{
-        backgroundColor: tone.bg,
+        backgroundColor: colors.surfaceContainerLow,
+        borderWidth: 1,
+        borderColor: colors.outlineVariant,
         borderRadius: radius.md,
         padding: space.gutter,
         gap: space.xs,
@@ -57,7 +59,7 @@ export function InsightCard({
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
         <MaterialIcons name={tone.icon} size={18} color={tone.fg} />
         <Txt variant="labelLg" color={tone.fg} style={{ flex: 1 }}>
-          {title} — {LEVEL_WORD[assessment.level]}
+          {title} , {LEVEL_WORD[assessment.level]}
         </Txt>
         {assessment.confidence === 'LOW' ? (
           <Txt variant="labelSm" color={tone.fg}>
@@ -73,7 +75,7 @@ export function InsightCard({
       ))}
 
       <Txt variant="labelSm" color={tone.fg} style={{ opacity: 0.8, marginTop: space.xs }}>
-        Advisory only — it does not change your trip, price or driver.
+        Advisory only , it does not change your trip, price or driver.
       </Txt>
     </View>
   );

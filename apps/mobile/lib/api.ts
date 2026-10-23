@@ -86,7 +86,7 @@ export interface FarmerShipment {
 
 export interface TripShipmentView extends FarmerShipment {
   savingPct?: number;
-  /** the working behind this load's bill — ride km, detour, tonne-km, both parts */
+  /** the working behind this load's bill , ride km, detour, tonne-km, both parts */
   pricing?: ShipmentShareDTO | null;
   farmer?: { _id: string; name: string; phone?: string; ratingAvg: number };
 }
@@ -143,7 +143,7 @@ export type {
   TripUtilisationDTO,
 };
 
-/** A machine as discovery returns it — the stored record plus this job's numbers. */
+/** A machine as discovery returns it , the stored record plus this job's numbers. */
 export interface MachineSearchResult extends FarmMachineDTO {
   distanceKm: number;
   availableForWindow: boolean;
@@ -163,7 +163,7 @@ interface RequestOptions {
 
 /**
  * The only way the app talks to the backend. Throws AppError whenever the
- * envelope says success:false — callers only ever handle data (ADR-015).
+ * envelope says success:false , callers only ever handle data (ADR-015).
  */
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, form, auth = true } = options;
@@ -341,7 +341,7 @@ export const api = {
       body: { reason },
     }),
 
-  /** Chat is per shared trip — every farmer aboard plus the driver. */
+  /** Chat is per shared trip , every farmer aboard plus the driver. */
   messages: (tripId: string) => request<ChatMessageDTO[]>(`/transport/trips/${tripId}/messages`),
 
   // ---------- pool: transporter side ----------
@@ -373,7 +373,7 @@ export const api = {
   offersFor: (requestId: string) =>
     request<TransporterOfferDTO[]>(`/pool/requests/${requestId}/offers`),
 
-  /** The farmer's final choice — this is what reserves capacity. */
+  /** The farmer's final choice , this is what reserves capacity. */
   selectTransporter: (requestId: string, offerId: string) =>
     request<{
       trip: TripSummary;
@@ -388,7 +388,7 @@ export const api = {
   getTrip: (tripId: string) =>
     request<{
       trip: TripSummary & { capacity: TripCapacity };
-      /** the one authoritative set of numbers — both roles render from this */
+      /** the one authoritative set of numbers , both roles render from this */
       pricing: TripPricingDTO | null;
       vehicle: VehicleDTO | null;
       transporter: { _id: string; name: string; phone?: string; ratingAvg: number } | null;
@@ -432,14 +432,14 @@ export const api = {
     }>(`/pool/trips/${tripId}/track`),
 
   /**
-   * Advisory delay / cancellation risk for one trip (ADR-041). Read-only — it
+   * Advisory delay / cancellation risk for one trip (ADR-041). Read-only , it
    * never changes the trip. A farmer gets `delay` only; the transporter also
    * gets `cancellation`.
    */
   tripPrediction: (tripId: string) =>
     request<TripPredictionDTO>(`/predictions/trips/${tripId}`),
 
-  /** High-demand corridors — useful when a driver is choosing where to head. */
+  /** High-demand corridors , useful when a driver is choosing where to head. */
   demandPredictions: () => request<DemandAssessment[]>('/predictions/demand'),
 
   // ---------- shipments ----------
@@ -504,7 +504,7 @@ export const api = {
         amount: number;
         transferId: string | null;
         transferStatus: string;
-        /** the payout's own state — NOT the payment's (ADR-043) */
+        /** the payout's own state , NOT the payment's (ADR-043) */
         payoutState: PayoutState;
         /** why it has not settled yet, when it has not */
         payoutNote: string | null;
@@ -577,7 +577,7 @@ export const api = {
   // V2 · Farm Resource Network
   // ==========================================================================
 
-  /** Machines that could actually do THIS job — priced for the window and area. */
+  /** Machines that could actually do THIS job , priced for the window and area. */
   findMachines: (query: {
     lat: number;
     lng: number;
@@ -612,7 +612,7 @@ export const api = {
     request<DemandClusterDTO[]>(`/farm/demand?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}`),
 
   /**
-   * Could this hire share a provider outing — and its travel cost — with jobs
+   * Could this hire share a provider outing , and its travel cost , with jobs
    * already booked nearby (ADR-042)? Advisory, read-only.
    */
   machineGrouping: (
@@ -705,7 +705,7 @@ export const api = {
   // V2 · Backhaul Network
   // ==========================================================================
 
-  /** What may be carried on what — configuration the server enforces. */
+  /** What may be carried on what , configuration the server enforces. */
   cargoCategories: () =>
     request<Array<CargoRule & { key: CargoCategory }>>('/backhaul/cargo-categories'),
 

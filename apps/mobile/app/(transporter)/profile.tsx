@@ -1,5 +1,5 @@
 /**
- * Transporter · Profile — driver, vehicle, preferences, sign out.
+ * Transporter · Profile , driver, vehicle, preferences, sign out.
  *
  * The vehicle record used to sit on the dashboard as a card among nine others.
  * It belongs here: it is identity and configuration, not an operational status.
@@ -80,7 +80,7 @@ export default function TransporterProfile() {
 
   /**
    * Drivers who registered before the onboarding step asked for a name have an
-   * empty one on record. This is the repair path — they set it themselves and it
+   * empty one on record. This is the repair path , they set it themselves and it
    * is written to the user document, rather than a screen inventing a label.
    */
   const saveName = async (): Promise<void> => {
@@ -138,7 +138,7 @@ export default function TransporterProfile() {
                   {user.name}
                 </Txt>
               ) : (
-                // no name on record — say so and offer the fix, rather than
+                // no name on record , say so and offer the fix, rather than
                 // silently showing the phone number where a name belongs
                 <Button
                   label="Add your name"
@@ -171,7 +171,7 @@ export default function TransporterProfile() {
           )}
         </Card>
 
-        {/* the vehicle — configuration, not status */}
+        {/* the vehicle , configuration, not status */}
         <Card>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
             <MaterialIcons name="local-shipping" size={22} color={colors.primary} />
@@ -184,7 +184,7 @@ export default function TransporterProfile() {
 
           {vehicle ? (
             <>
-              <Row label="Registration" value={vehicle.registrationNumber ?? '—'} />
+              <Row label="Registration" value={vehicle.registrationNumber ?? ','} />
               <Row label="Type" value={VEHICLE_LABEL[vehicle.vehicleType] ?? vehicle.vehicleType} />
               <Row label="Capacity" value={kg(vehicle.capacityKg)} />
               <Row label="Rate" value={`${rupees(vehicle.ratePerKm)} / km`} />
@@ -203,7 +203,7 @@ export default function TransporterProfile() {
                 icon="add"
                 onPress={() => router.push('/(auth)/vehicle-register')}
                 style={{ marginTop: space.gutter }}
-              />
+               variant="primary"/>
             </>
           )}
         </Card>
@@ -298,7 +298,7 @@ export default function TransporterProfile() {
           loading={saving}
           disabled={nameDraft.trim().length < 2}
           onPress={() => void saveName()}
-        />
+         variant="secondary"/>
       </Sheet>
 
       <Sheet

@@ -1,4 +1,4 @@
-/** f0.5_onboarding_success — confirmation, and where push permission is requested. */
+/** f0.5_onboarding_success , confirmation, and where push permission is requested. */
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -34,7 +34,7 @@ export default function Success() {
           onPress={() =>
             router.replace(role === 'FARMER' ? '/(farmer)/home' : '/(transporter)/home')
           }
-        />
+         variant="primary"/>
       }
     >
       <View style={{ alignItems: 'center', paddingVertical: space.xl * 2 }}>
@@ -64,9 +64,9 @@ export default function Success() {
           style={{ marginTop: space.md, textAlign: 'center' }}
         >
           {isProvider
-            ? 'Your machine is listed. Farmers nearby can now find and book it — requests appear under Farm Services.'
+            ? 'Your machine is listed. Farmers nearby can now find and book it , requests appear under Farm Services.'
             : role === 'FARMER'
-              ? 'Create your first transport request — by tapping, or just by speaking to Servo AI.'
+              ? 'Create your first transport request , by tapping, or just by speaking to Servo AI.'
               : 'Once your documents are verified you will start receiving trip requests near you.'}
         </Txt>
       </View>

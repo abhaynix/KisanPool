@@ -19,7 +19,7 @@ export interface Loader<T> {
   error: unknown;
   stale: boolean;
   refresh: () => void;
-  /** re-run without touching any visible state — for socket-driven reconciliation */
+  /** re-run without touching any visible state , for socket-driven reconciliation */
   reconcile: () => Promise<void>;
   set: (updater: (previous: T) => T) => void;
 }

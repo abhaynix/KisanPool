@@ -1,5 +1,5 @@
 /**
- * New transport request — crop, quantity, pickup, destination, notes.
+ * New transport request , crop, quantity, pickup, destination, notes.
  *
  * Submitting puts the request in the pool for nearby transporters to claim; it
  * does not book anything and costs nothing.
@@ -44,7 +44,7 @@ export default function NewRequest() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
   const [pickerOpen, setPickerOpen] = useState(false);
-  /** true once the farmer has explicitly chosen — stops a late profile load stomping it */
+  /** true once the farmer has explicitly chosen , stops a late profile load stomping it */
   const [pickupTouched, setPickupTouched] = useState(false);
 
   useEffect(() => {
@@ -88,7 +88,7 @@ export default function NewRequest() {
           loading={busy}
           disabled={!valid}
           onPress={() => void submit()}
-        />
+         variant="primary"/>
       }
     >
       <Header title="What are you sending?" subtitle="काय पाठवायचं आहे?" onBack={() => router.back()} />

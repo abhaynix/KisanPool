@@ -1,10 +1,10 @@
 /**
- * F2 · Mandi discovery — search, filter, map, ranked recommendations.
+ * F2 · Mandi discovery , search, filter, map, ranked recommendations.
  *
  * A primary tab, so it keeps the bottom navigation (the Stitch export drew this
  * as a back-arrow sub-page; as a product area it needs the bar).
  *
- * Every number on a card — distance, travel time, modal rate, demand — comes from
+ * Every number on a card , distance, travel time, modal rate, demand , comes from
  * lib/mandis.ts against the farmer's own pickup point. Nothing is a literal here.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -162,10 +162,10 @@ export default function MandiDiscovery() {
         />
 
         {!origin ? (
-          <Card raised={false} style={{ backgroundColor: colors.infoContainer, borderColor: colors.infoContainer, marginTop: space.gutter }}>
+          <Card raised={false} style={{ backgroundColor: colors.surfaceContainerLow, borderColor: colors.outlineVariant, marginTop: space.gutter }}>
             <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center' }}>
-              <MaterialIcons name="info" size={18} color={colors.onInfoContainer} />
-              <Txt variant="labelSm" color={colors.onInfoContainer} style={{ flex: 1 }}>
+              <MaterialIcons name="info" size={18} color={colors.statusInfo} />
+              <Txt variant="labelSm" color={colors.statusInfo} style={{ flex: 1 }}>
                 Set your pickup location in Profile and we will sort mandis by how far they are
                 from your farm.
               </Txt>
@@ -190,7 +190,7 @@ export default function MandiDiscovery() {
               icon="star-border"
               title="No favourites yet"
               message="Star a mandi and it will be waiting here the next time you send produce."
-              action={<Button label="Browse all mandis" onPress={() => setOnlyFavourites(false)} />}
+              action={<Button label="Browse all mandis" onPress={() => setOnlyFavourites(false)}  variant="primary"/>}
             />
           ) : (
             <EmptyState
@@ -213,7 +213,7 @@ export default function MandiDiscovery() {
                     setQuery('');
                     setCategory('All');
                   }}
-                />
+                 variant="secondary"/>
               }
             />
           )
@@ -249,13 +249,13 @@ export default function MandiDiscovery() {
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
                         <MaterialIcons name="directions-car" size={14} color={colors.onSurfaceVariant} />
                         <Txt variant="labelSm" color={colors.onSurfaceVariant}>
-                          {origin ? km(mandi.distanceKm) : '—'}
+                          {origin ? km(mandi.distanceKm) : ','}
                         </Txt>
                       </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
                         <MaterialIcons name="schedule" size={14} color={colors.onSurfaceVariant} />
                         <Txt variant="labelSm" color={colors.onSurfaceVariant}>
-                          {origin ? durationLabel(mandi.etaMinutes) : '—'}
+                          {origin ? durationLabel(mandi.etaMinutes) : ','}
                         </Txt>
                       </View>
                     </View>

@@ -1,11 +1,11 @@
-/** f0.1_welcome_language — language picker, sets the default Servo AI language. */
+/** f0.1_welcome_language , language picker, sets the default Servo AI language. */
 import { useState } from 'react';
 import { Image, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { Language } from '@kisanpool/shared';
 import { Button, Card, Screen, Txt } from '../../components/ui';
-import { colors, radius, space } from '../../theme';
+import { colors, radius, space, wordmarkFamily } from '../../theme';
 
 const LANGUAGES: Array<{ code: Language; native: string; english: string }> = [
   { code: 'mr', native: 'मराठी', english: 'Marathi' },
@@ -23,7 +23,7 @@ export default function Welcome() {
         <Button
           label="Continue"
           onPress={() => router.push({ pathname: '/(auth)/role', params: { language } })}
-        />
+         variant="primary"/>
       }
     >
       <View style={{ alignItems: 'center', paddingVertical: space.xl }}>
@@ -39,7 +39,7 @@ export default function Welcome() {
         >
           <MaterialIcons name="energy-savings-leaf" size={40} color={colors.onPrimary} />
         </View>
-        <Txt variant="displayLg" style={{ marginTop: space.md }}>
+        <Txt variant="displayLg" style={{ marginTop: space.md, fontFamily: wordmarkFamily }}>
           KisanPool
         </Txt>
         <Txt variant="bodyLg" color={colors.onSurfaceVariant} style={{ textAlign: 'center' }}>

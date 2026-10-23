@@ -38,8 +38,8 @@ export function ReturnLoadCard({
 
     {/* why this row is here, in words */}
     <View style={s.reason}>
-      <MaterialIcons name="insights" size={16} color={colors.onInfoContainer} />
-      <Txt variant="labelSm" color={colors.onInfoContainer} style={{ flex: 1 }}>
+      <MaterialIcons name="insights" size={16} color={colors.statusInfo} />
+      <Txt variant="labelSm" color={colors.statusInfo} style={{ flex: 1 }}>
         {match.fitReason}
       </Txt>
     </View>
@@ -59,7 +59,7 @@ export function ReturnLoadCard({
       </View>
     </View>
 
-    {/* what it COSTS, next to what it pays — never one without the other */}
+    {/* what it COSTS, next to what it pays , never one without the other */}
     <View style={s.tradeoff}>
       <View style={{ flex: 1 }}>
         <Txt variant="labelSm" color={colors.onSurfaceVariant}>
@@ -107,6 +107,7 @@ export function ReturnLoadCard({
       icon="add"
       loading={busy}
       onPress={onTake}
+      variant="secondary"
       style={{ marginTop: space.gutter }}
     />
     </Card>
@@ -118,7 +119,9 @@ const s = {
     flexDirection: 'row' as const,
     alignItems: 'flex-start' as const,
     gap: space.sm,
-    backgroundColor: colors.infoContainer,
+    backgroundColor: colors.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
     borderRadius: radius.md,
     padding: space.sm,
     marginTop: space.gutter,

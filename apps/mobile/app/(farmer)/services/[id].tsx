@@ -3,7 +3,7 @@
  *
  * The price breakdown is the point of this screen. A farmer being quoted ₹3,200
  * for four hours of a tractor deserves to see that it is ₹2,600 of work plus ₹600
- * of getting the machine to their field — because that is the number they can
+ * of getting the machine to their field , because that is the number they can
  * argue with, and because "trust me" is not a pricing model.
  *
  * The booking sheet is a Sheet rather than a screen on purpose: the farmer has
@@ -71,7 +71,7 @@ export default function MachineDetail() {
   const [toast, setToast] = useState<string | null>(null);
   const [toastTone, setToastTone] = useState<'success' | 'error'>('success');
   const [bookError, setBookError] = useState<string>();
-  // the FIELD the work is at — seeded from the saved place, but the farmer picks
+  // the FIELD the work is at , seeded from the saved place, but the farmer picks
   // it: the machine may be for a plot that is not their default location
   const [site, setSite] = useState<GeoPoint | null>(null);
   const [siteTouched, setSiteTouched] = useState(false);
@@ -109,7 +109,7 @@ export default function MachineDetail() {
           })
         : [];
       // could this hire share a provider outing (and its travel cost) with jobs
-      // already booked nearby? Advisory — never forces anything (ADR-042)
+      // already booked nearby? Advisory , never forces anything (ADR-042)
       const grouping = jobSite
         ? await api
             .machineGrouping(params.id, {
@@ -134,7 +134,7 @@ export default function MachineDetail() {
   const machine = detail.data?.machine;
   const row = detail.data?.row;
   const grouping = detail.data?.grouping ?? null;
-  /** the site actually used — the farmer's choice, or the resolved fallback */
+  /** the site actually used , the farmer's choice, or the resolved fallback */
   const effectiveSite = site ?? detail.data?.site ?? null;
   const quote = row?.quote ?? null;
   const needsAcres = machine?.pricing.unit === 'PER_ACRE';
@@ -161,7 +161,7 @@ export default function MachineDetail() {
     } catch (err) {
       const appError = toAppError(err);
       setConfirming(false);
-      // CONCURRENT_BOOKING here means someone took the slot while they decided —
+      // CONCURRENT_BOOKING here means someone took the slot while they decided ,
       // the screen has to say that plainly and offer another time, not "try again"
       setBookError(appError.message);
       if (appError.code === 'CONCURRENT_BOOKING') detail.refresh();
@@ -204,7 +204,7 @@ export default function MachineDetail() {
               icon="event-available"
               disabled={!effectiveSite || (needsAcres && !(Number(acres) > 0))}
               onPress={() => setBookingOpen(true)}
-            />
+             variant="primary"/>
           ) : (
             <Button
               label="See other providers"
@@ -266,7 +266,7 @@ export default function MachineDetail() {
           {row ? <Row label="Distance to your field" value={km(row.distanceKm)} bold /> : null}
         </Card>
 
-        {/* the field the work is at — the farmer's choice, editable */}
+        {/* the field the work is at , the farmer's choice, editable */}
         <Card onPress={() => setPickerOpen(true)}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
             <MaterialIcons name="place" size={20} color={colors.primary} />
@@ -295,7 +295,7 @@ export default function MachineDetail() {
           onClose={() => setPickerOpen(false)}
           initial={effectiveSite}
           title="Where is the work?"
-          subtitle="The field the machine should come to — not necessarily your home village."
+          subtitle="The field the machine should come to , not necessarily your home village."
           confirmLabel="Use this field"
           onPick={(point) => {
             setSite(point);
@@ -315,7 +315,7 @@ export default function MachineDetail() {
 
             <Divider />
             <Row
-              label={`Work — ${UNIT_NOUN[quote.unit](quote.billableUnits)}`}
+              label={`Work , ${UNIT_NOUN[quote.unit](quote.billableUnits)}`}
               value={rupees(quote.workCost)}
             />
             <Txt variant="labelSm" color={colors.outline}>
@@ -324,7 +324,7 @@ export default function MachineDetail() {
             {quote.travelCost > 0 ? (
               <>
                 <Row
-                  label={`Travel — ${km(quote.travelKm)} each way${
+                  label={`Travel , ${km(quote.travelKm)} each way${
                     quote.travelShareCount > 1 ? ` · shared ${quote.travelShareCount} ways` : ''
                   }`}
                   value={rupees(quote.travelCost)}
@@ -366,12 +366,14 @@ export default function MachineDetail() {
           </Banner>
         ) : null}
 
-        {/* shared-machine utilisation — surfaced when this hire could ride along
+        {/* shared-machine utilisation , surfaced when this hire could ride along
             with nearby jobs and split the travel (ADR-042). Advisory only. */}
         {grouping && grouping.compatibility !== 'NONE' && grouping.projectedSaving > 0 ? (
           <View
             style={{
               backgroundColor: colors.primaryContainer,
+              borderWidth: 1,
+              borderColor: colors.outlineVariant,
               borderRadius: radius.md,
               padding: space.gutter,
               gap: space.xs,
@@ -398,7 +400,7 @@ export default function MachineDetail() {
           </View>
         ) : null}
 
-        {/* when the machine is already committed — the calendar, plainly */}
+        {/* when the machine is already committed , the calendar, plainly */}
         {machine.schedule.busy.length > 0 ? (
           <Card>
             <Txt variant="labelLg" color={colors.onSurfaceVariant}>
@@ -423,7 +425,7 @@ export default function MachineDetail() {
               >
                 <MaterialIcons name="block" size={16} color={colors.outline} />
                 <Txt variant="bodyMd" color={colors.onSurfaceVariant} style={{ flex: 1 }}>
-                  {shortDate(b.start)} — {b.reason ?? 'unavailable'}
+                  {shortDate(b.start)} , {b.reason ?? 'unavailable'}
                 </Txt>
               </View>
             ))}
@@ -439,7 +441,7 @@ export default function MachineDetail() {
         ) : null}
       </Screen>
 
-      {/* confirming is one sheet, not a second screen — everything is already chosen */}
+      {/* confirming is one sheet, not a second screen , everything is already chosen */}
       <Sheet
         visible={bookingOpen}
         onClose={() => setBookingOpen(false)}
@@ -471,8 +473,8 @@ export default function MachineDetail() {
         />
 
         <View style={s.holdNote}>
-          <MaterialIcons name="lock-clock" size={18} color={colors.onInfoContainer} />
-          <Txt variant="labelSm" color={colors.onInfoContainer} style={{ flex: 1 }}>
+          <MaterialIcons name="lock-clock" size={18} color={colors.statusInfo} />
+          <Txt variant="labelSm" color={colors.statusInfo} style={{ flex: 1 }}>
             This holds the slot while the provider answers, so nobody else can take that time.
             You pay nothing until the work is done.
           </Txt>
@@ -483,7 +485,7 @@ export default function MachineDetail() {
           icon="event-available"
           loading={busy}
           onPress={() => setConfirming(true)}
-        />
+         variant="secondary"/>
       </Sheet>
 
       <ConfirmDialog
@@ -512,7 +514,9 @@ const s = {
     flexDirection: 'row' as const,
     alignItems: 'flex-start' as const,
     gap: space.sm,
-    backgroundColor: colors.infoContainer,
+    backgroundColor: colors.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
     borderRadius: radius.md,
     padding: space.gutter,
     marginBottom: space.gutter,

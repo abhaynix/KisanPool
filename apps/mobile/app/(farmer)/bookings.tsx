@@ -1,5 +1,5 @@
 /**
- * Farmer · Bookings — every request and trip, in one place.
+ * Farmer · Bookings , every request and trip, in one place.
  *
  * This screen did not exist: the booking list was a few rows at the bottom of
  * Home. It is a product area of its own, so it gets a tab.
@@ -49,7 +49,7 @@ function bucketOf(row: MyRequest): Filter {
   return 'confirmed';
 }
 
-/** OPEN requests have no bucket above — they are still looking, so they get one. */
+/** OPEN requests have no bucket above , they are still looking, so they get one. */
 const isPending = (row: MyRequest): boolean => row.state === 'OPEN';
 
 export default function Bookings() {
@@ -74,7 +74,7 @@ export default function Bookings() {
   const visible = useMemo(() => {
     if (filter === 'all') return rows;
     if (filter === 'confirmed') {
-      // "Confirmed" also holds requests still open in the pool — both are pre-trip
+      // "Confirmed" also holds requests still open in the pool , both are pre-trip
       return rows.filter((row) => isPending(row) || bucketOf(row) === 'confirmed');
     }
     return rows.filter((row) => !isPending(row) && bucketOf(row) === filter);
@@ -100,7 +100,7 @@ export default function Bookings() {
             <AppBar
               title="My bookings"
               right={
-                // machine hires live in their own list — this is produce transport
+                // machine hires live in their own list , this is produce transport
                 <Button
                   label="Farm services"
                   variant="ghost"
@@ -116,11 +116,11 @@ export default function Bookings() {
         }
       >
         {requests.stale ? (
-          <Card raised={false} style={{ backgroundColor: colors.warningContainer, borderColor: colors.warningContainer }}>
+          <Card raised={false} style={{ backgroundColor: colors.surfaceContainerLow, borderColor: colors.outlineVariant }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
               <MaterialIcons name="sync-problem" size={18} color={colors.onWarningContainer} />
               <Txt variant="labelSm" color={colors.onWarningContainer} style={{ flex: 1 }}>
-                Showing your last known bookings — we could not reach KisanPool just now.
+                Showing your last known bookings , we could not reach KisanPool just now.
               </Txt>
             </View>
           </Card>
@@ -220,9 +220,9 @@ function BookingCard({
   );
 }
 
-/** Empty means something different per filter — never one generic message. */
+/** Empty means something different per filter , never one generic message. */
 function EmptyForFilter({ filter, onCreate }: { filter: Filter; onCreate: () => void }) {
-  const cta = <Button label="Transport produce" onPress={onCreate} />;
+  const cta = <Button label="Transport produce" onPress={onCreate}  variant="secondary"/>;
 
   switch (filter) {
     case 'awaiting':
@@ -271,7 +271,7 @@ function EmptyForFilter({ filter, onCreate }: { filter: Filter; onCreate: () => 
         <EmptyState
           icon="assignment"
           title="No bookings yet"
-          message="Send your first load to the pool — nearby drivers will compete for it, and you pick who carries it."
+          message="Send your first load to the pool , nearby drivers will compete for it, and you pick who carries it."
           action={cta}
         />
       );

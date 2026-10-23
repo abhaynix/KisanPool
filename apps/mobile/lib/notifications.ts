@@ -5,13 +5,13 @@ import { api } from './api';
 /**
  * Push registration.
  *
- * Expo Go dropped remote push in SDK 53 — and `expo-notifications` throws on
+ * Expo Go dropped remote push in SDK 53 , and `expo-notifications` throws on
  * *import* there, not on use, so it must never be imported at module scope or the
  * screen that pulls this file in crashes before it renders. Everything below loads
  * it lazily, and only once we know we are in a build that supports it.
  *
  * Sockets already cover the foreground case, so a skipped registration costs the
- * live updates nothing — only the backgrounded-app notifications (ADR-005).
+ * live updates nothing , only the backgrounded-app notifications (ADR-005).
  */
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
@@ -29,8 +29,8 @@ let cached: NotificationsModule | null = null;
 
 /**
  * Expo Go's lack of push is a fixed property of the runtime, not an event. Saying
- * so once is information; saying it on every registration — and registration runs
- * again on every Fast Refresh — is noise that buries real warnings.
+ * so once is information; saying it on every registration , and registration runs
+ * again on every Fast Refresh , is noise that buries real warnings.
  */
 let saidUnsupported = false;
 
@@ -58,11 +58,11 @@ function load(): NotificationsModule | null {
   }
 }
 
-/** True when this build can receive remote push at all — the UI can say so honestly. */
+/** True when this build can receive remote push at all , the UI can say so honestly. */
 export const pushSupported = (): boolean => !isExpoGo;
 
 /**
- * Registered on login and after onboarding. Returns null — never throws — when push
+ * Registered on login and after onboarding. Returns null , never throws , when push
  * is unavailable or the permission is refused; neither is an error worth blocking a
  * farmer's booking over.
  */
@@ -71,7 +71,7 @@ export async function registerForPush(): Promise<string | null> {
     if (!saidUnsupported) {
       saidUnsupported = true;
       console.log(
-        '[push] Expo Go cannot receive remote notifications since SDK 53 — ' +
+        '[push] Expo Go cannot receive remote notifications since SDK 53 , ' +
           'use a development build to test them. Live updates still work over the socket.',
       );
     }

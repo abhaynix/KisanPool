@@ -17,7 +17,7 @@ interface Handling {
   actionLabel?: string;
 }
 
-/** One entry per code — the union is exhaustive by construction. */
+/** One entry per code , the union is exhaustive by construction. */
 const HANDLING: Record<ErrorCode, Handling> = {
   AUTH_UNAUTHENTICATED: { icon: 'lock', action: 'redirect', redirectTo: '/(auth)/welcome', actionLabel: 'Sign in' },
   AUTH_FORBIDDEN: { icon: 'block', action: 'redirect', redirectTo: '/', actionLabel: 'Go home' },
@@ -66,11 +66,12 @@ export function ErrorView({ error, onRetry }: { error: unknown; onRetry?: () => 
         message={appError.message}
         action={
           handling.action === 'retry' && onRetry ? (
-            <Button label={handling.actionLabel ?? 'Try again'} icon="refresh" onPress={onRetry} />
+            <Button label={handling.actionLabel ?? 'Try again'} icon="refresh" onPress={onRetry} variant="primary" />
           ) : handling.action === 'redirect' && handling.redirectTo ? (
             <Button
               label={handling.actionLabel ?? 'Continue'}
               onPress={() => router.replace(handling.redirectTo as never)}
+              variant="primary"
             />
           ) : undefined
         }

@@ -1,7 +1,7 @@
 /**
  * The honest status banner (ADR-044, §15).
  *
- * Shows nothing at all when the system is normal — a status bar that is always
+ * Shows nothing at all when the system is normal , a status bar that is always
  * present is a status bar nobody reads. During an incident it says what is
  * happening in plain language, when the shown data was last authoritative, and
  * whether new actions will be accepted.
@@ -28,7 +28,7 @@ export function useServiceStatus(): ServiceStatusDTO | null {
       .serviceStatus()
       .then(setStatus)
       // if the status endpoint itself cannot be reached there is nothing useful
-      // to say — the screen's own error handling is a better signal than a guess
+      // to say , the screen's own error handling is a better signal than a guess
       .catch(() => setStatus(null));
   }, []);
 
@@ -49,8 +49,10 @@ export function ServiceBanner({ status }: { status: ServiceStatusDTO | null }) {
   return (
     <View
       style={{
-        backgroundColor: severe ? colors.warningContainer : colors.infoContainer,
+        backgroundColor: colors.surfaceContainerLow,
         borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.outlineVariant,
         padding: space.gutter,
         marginBottom: space.gutter,
         gap: space.xs,
@@ -61,11 +63,11 @@ export function ServiceBanner({ status }: { status: ServiceStatusDTO | null }) {
         <MaterialIcons
           name={severe ? 'cloud-off' : 'sync'}
           size={20}
-          color={severe ? colors.onWarningContainer : colors.onInfoContainer}
+          color={severe ? colors.statusWarning : colors.statusInfo}
         />
         <Txt
           variant="labelLg"
-          color={severe ? colors.onWarningContainer : colors.onInfoContainer}
+          color={severe ? colors.statusWarning : colors.statusInfo}
           style={{ flex: 1 }}
         >
           {severe ? 'System recovery in progress' : 'Service catching up'}
@@ -74,7 +76,7 @@ export function ServiceBanner({ status }: { status: ServiceStatusDTO | null }) {
 
       <Txt
         variant="bodyMd"
-        color={severe ? colors.onWarningContainer : colors.onInfoContainer}
+          color={severe ? colors.statusWarning : colors.statusInfo}
       >
         {status.message}
       </Txt>
@@ -84,7 +86,7 @@ export function ServiceBanner({ status }: { status: ServiceStatusDTO | null }) {
       {status.lastSyncedAt ? (
         <Txt
           variant="labelSm"
-          color={severe ? colors.onWarningContainer : colors.onInfoContainer}
+          color={severe ? colors.statusWarning : colors.statusInfo}
           style={{ opacity: 0.85 }}
         >
           Showing information last confirmed at{' '}

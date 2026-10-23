@@ -1,7 +1,7 @@
 /**
  * One place that decides where the backend lives.
  *
- * Both REST and the socket read from here — they used to disagree (a hardcoded
+ * Both REST and the socket read from here , they used to disagree (a hardcoded
  * LAN IP in api.ts against a localhost fallback in socket.ts), which meant every
  * live update silently died on a real device while REST kept working.
  */
@@ -10,7 +10,7 @@ import Constants from 'expo-constants';
 const DEFAULT_PORT = 4000;
 
 /**
- * The Metro host the app was served from — on a phone this is the dev machine's
+ * The Metro host the app was served from , on a phone this is the dev machine's
  * LAN IP, which is exactly the host the API is on too. Lets the app work on a
  * teammate's laptop without anyone editing .env.
  */

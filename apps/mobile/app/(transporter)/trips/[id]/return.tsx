@@ -1,12 +1,12 @@
 /**
- * Return journey — the second half of the trip.
+ * Return journey , the second half of the trip.
  *
  * The driver has just dropped the farmers' produce at the mandi and is about to
  * drive 220 km home with an empty vehicle. Everything on this screen is aimed at
  * one decision: is any of this worth stopping for?
  *
- * So it never leads with the fare. Each row shows what the load ADDS — kilometres,
- * minutes, weight — beside what it pays, because a ₹900 load that costs 40 km of
+ * So it never leads with the fare. Each row shows what the load ADDS , kilometres,
+ * minutes, weight , beside what it pays, because a ₹900 load that costs 40 km of
  * detour is a worse deal than a ₹600 one on the way, and a screen that showed only
  * the money would hide exactly that. "Free return" is never said, because it is
  * not free: it is cheap, and the reason it is cheap is that the journey is already
@@ -89,7 +89,7 @@ export default function ReturnJourney() {
     try {
       await api.openReturnLeg(id);
       setToastTone('success');
-      setToast('Return journey opened — here is what is going your way');
+      setToast('Return journey opened , here is what is going your way');
       data.refresh();
     } catch (err) {
       setToastTone('error');
@@ -105,7 +105,7 @@ export default function ReturnJourney() {
       const result = await api.acceptReturnLoad(id, match.request._id);
       setAccepting(null);
       setToastTone('success');
-      setToast(`Booked — ${rupees(result.quote.transporterEarning)} on the way home`);
+      setToast(`Booked , ${rupees(result.quote.transporterEarning)} on the way home`);
       data.refresh();
     } catch (err) {
       setAccepting(null);
@@ -151,13 +151,13 @@ export default function ReturnJourney() {
               label="Set off for home"
               icon="navigation"
               onPress={() => void api.setReturnLegState(id, 'IN_TRANSIT').then(() => data.refresh())}
-            />
+             variant="primary"/>
           ) : legState === 'IN_TRANSIT' && booked.every((b) => b.state === 'DELIVERED') ? (
             <Button
               label="Finish the return journey"
               icon="check-circle"
               onPress={() => void api.setReturnLegState(id, 'COMPLETED').then(() => data.refresh())}
-            />
+             variant="secondary"/>
           ) : null
         }
       >
@@ -186,19 +186,19 @@ export default function ReturnJourney() {
           <EmptyState
             icon="u-turn-left"
             title="Deliver the produce first"
-            message="The return journey opens once every farmer's load is off the vehicle. Their trip always comes first — nothing you take home can get in its way."
+            message="The return journey opens once every farmer's load is off the vehicle. Their trip always comes first , nothing you take home can get in its way."
             action={
               <Button
                 label="Open the return journey"
                 icon="u-turn-left"
                 loading={busy === 'open'}
                 onPress={() => void openLeg()}
-              />
+               variant="secondary"/>
             }
           />
         ) : (
           <>
-            {/* the empty run this is recovering — the whole premise, in one card */}
+            {/* the empty run this is recovering , the whole premise, in one card */}
             <Card
               style={{
                 backgroundColor: colors.primaryContainer,
@@ -235,7 +235,7 @@ export default function ReturnJourney() {
               ) : null}
             </Card>
 
-            {/* the round trip, both legs — what the feature is actually worth */}
+            {/* the round trip, both legs , what the feature is actually worth */}
             {utilisation && utilisation.returnEarning > 0 ? (
               <Card>
                 <Txt variant="labelLg">This journey, both ways</Txt>
@@ -317,7 +317,7 @@ export default function ReturnJourney() {
                               void advance(booking._id, next.to);
                             }}
                             style={{ flex: 2 }}
-                          />
+                           variant="secondary"/>
                         ) : null}
                       </View>
                     </Card>
@@ -335,8 +335,8 @@ export default function ReturnJourney() {
               <EmptyState
                 icon="search-off"
                 title="No return loads on your route right now"
-                message="Shops and farmers post loads through the day. We'll notify you if one appears before you set off — you can keep driving."
-                action={<Button label="Check again" icon="refresh" onPress={data.refresh} />}
+                message="Shops and farmers post loads through the day. We'll notify you if one appears before you set off , you can keep driving."
+                action={<Button label="Check again" icon="refresh" onPress={data.refresh}  variant="secondary"/>}
               />
             ) : (
               matches.map((match) => (
@@ -357,7 +357,7 @@ export default function ReturnJourney() {
         title="Take this load home?"
         message={
           accepting
-            ? `${accepting.request.description} — ${kg(accepting.request.weightKg)} from ${
+            ? `${accepting.request.description} , ${kg(accepting.request.weightKg)} from ${
                 accepting.request.pickup.name
               } to ${accepting.request.destination.name}. It adds ${km(
                 accepting.detourKm,
@@ -402,7 +402,7 @@ export default function ReturnJourney() {
             disabled={otp.trim().length !== 4}
             onPress={() => otpFor && void advance(otpFor._id, 'PICKED_UP', otp.trim())}
             style={{ flex: 1 }}
-          />
+           variant="secondary"/>
         </View>
       </Sheet>
 

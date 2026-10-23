@@ -5,7 +5,7 @@
  * ------------------------------------
  * A transporter claiming a load is an EXPRESSION OF INTEREST. It is not a booking,
  * it reserves nothing, and several transporters may claim the same load at once.
- * Only the farmer's selection confirms anything — that is the step that creates a
+ * Only the farmer's selection confirms anything , that is the step that creates a
  * shipment and reserves capacity, inside a transaction, server-side.
  *
  * So no screen may ever render an offer as a confirmed booking. Every label the
@@ -69,12 +69,12 @@ export const REQUEST_COPY: Record<RequestState, StateCopy> = {
 };
 
 // ---------------------------------------------------------------------------
-// a transporter's claim — as the TRANSPORTER sees it
+// a transporter's claim , as the TRANSPORTER sees it
 // ---------------------------------------------------------------------------
 
 export const OFFER_COPY: Record<OfferState, StateCopy> = {
   INTERESTED: {
-    label: 'Accepted — awaiting farmer',
+    label: 'Accepted , awaiting farmer',
     detail: 'You accepted this load. It is not booked until the farmer chooses you.',
     tone: 'warning',
     badge: 'PENDING',
@@ -181,7 +181,7 @@ export const SHIPMENT_COPY: Record<ShipmentState, StateCopy> = {
 export interface CapacityLedger {
   /** the vehicle's rated capacity */
   totalKg: number;
-  /** claimed by this transporter, awaiting a farmer's decision — NOT reserved */
+  /** claimed by this transporter, awaiting a farmer's decision , NOT reserved */
   acceptedKg: number;
   /** confirmed by farmers; reserved and counted against availability */
   confirmedKg: number;
@@ -201,7 +201,7 @@ export function ledgerFrom(capacity: TripCapacity, acceptedKg = 0): CapacityLedg
   };
 }
 
-/** The ledger for a transporter with no trip yet — the vehicle is wholly free. */
+/** The ledger for a transporter with no trip yet , the vehicle is wholly free. */
 export function emptyLedger(totalKg: number, acceptedKg = 0): CapacityLedger {
   return { totalKg, acceptedKg, confirmedKg: 0, loadedKg: 0, availableKg: totalKg };
 }
@@ -211,7 +211,7 @@ const pct = (part: number, whole: number): number =>
 
 /**
  * Stacked-bar segments for <ProgressTrack />: loaded, then confirmed-but-not-yet-
- * loaded. Accepted weight is drawn separately as a hatched hint, never as fill —
+ * loaded. Accepted weight is drawn separately as a hatched hint, never as fill ,
  * it has not consumed anything.
  */
 export function ledgerSegments(
@@ -242,7 +242,7 @@ export function acceptedKgFrom(
     .reduce((sum, offer) => sum + (offer.request?.quantityKg ?? 0), 0);
 }
 
-/** Shipment states that still hold reserved space — re-exported so screens agree. */
+/** Shipment states that still hold reserved space , re-exported so screens agree. */
 export const RESERVES_CAPACITY = OCCUPIES_CAPACITY;
 
 /** A shipment the farmer should still be able to watch on a map. */
@@ -274,7 +274,7 @@ export interface ScorableOffer {
  *
  * Derived, never stored: price saving dominates because that is why pooling
  * exists, then the driver's rating, then how close they already are. It only ever
- * ORDERS options the backend produced — it never changes a price or a promise.
+ * ORDERS options the backend produced , it never changes a price or a promise.
  */
 export function offerMatchScore(offer: ScorableOffer): number {
   const saving = Math.max(0, Math.min(45, offer.savingPct));           // 0–45

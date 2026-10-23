@@ -1,5 +1,5 @@
 /**
- * Transporter · Trips — everything this driver has in flight.
+ * Transporter · Trips , everything this driver has in flight.
  *
  * Two different kinds of thing live here and the screen keeps them apart on
  * purpose:
@@ -99,7 +99,7 @@ export default function TransporterTrips() {
       setToast('Acceptance withdrawn');
       data.refresh();
     } catch (err) {
-      // BOOKING_STATE_INVALID here means the farmer already chose — say that plainly
+      // BOOKING_STATE_INVALID here means the farmer already chose , say that plainly
       setWithdrawing(null);
       setToastTone('error');
       setToast(toAppError(err).message);
@@ -138,7 +138,7 @@ export default function TransporterTrips() {
                   label="Browse requests"
                   icon="local-shipping"
                   onPress={() => router.push('/(transporter)/requests')}
-                />
+                 variant="primary"/>
               }
             />
           ) : (
@@ -173,13 +173,13 @@ export default function TransporterTrips() {
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
                         <MaterialIcons name="my-location" size={15} color={colors.primary} />
                         <Txt variant="bodyMd" numberOfLines={1} style={{ flex: 1 }}>
-                          {request?.pickup.name ?? '—'}
+                          {request?.pickup.name ?? ','}
                         </Txt>
                       </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
                         <MaterialIcons name="place" size={15} color={colors.tertiary} />
                         <Txt variant="bodyMd" numberOfLines={1} style={{ flex: 1 }}>
-                          {request?.destination.name ?? '—'}
+                          {request?.destination.name ?? ','}
                         </Txt>
                       </View>
                     </View>
@@ -212,7 +212,7 @@ export default function TransporterTrips() {
                   label="Browse requests"
                   icon="local-shipping"
                   onPress={() => router.push('/(transporter)/requests')}
-                />
+                 variant="secondary"/>
               }
             />
           ) : (
@@ -253,7 +253,7 @@ export default function TransporterTrips() {
                   icon="navigation"
                   onPress={() => router.push(`/(transporter)/trips/${trip._id}`)}
                   style={{ marginTop: space.gutter }}
-                />
+                 variant="secondary"/>
               </Card>
             ))
           )
@@ -275,7 +275,7 @@ export default function TransporterTrips() {
                   <Txt variant="labelLg">{trip.destination.name}</Txt>
                   <Txt variant="labelSm" color={colors.onSurfaceVariant}>
                     {trip.poolSize} {trip.poolSize === 1 ? 'farmer' : 'farmers'} ·{' '}
-                    {trip.completedAt ? shortDate(trip.completedAt) : '—'}
+                    {trip.completedAt ? shortDate(trip.completedAt) : ','}
                   </Txt>
                 </View>
                 <StatusBadge status={trip.state} label={TRIP_LABEL[trip.state] ?? trip.state} />

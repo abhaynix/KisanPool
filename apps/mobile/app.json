@@ -5,11 +5,11 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "scheme": "kisanpool",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#f8faf8"
+      "backgroundColor": "#0a0a0a"
     },
     "ios": {
       "supportsTablet": false,
@@ -22,7 +22,7 @@
     },
     "android": {
       "package": "com.kisanpool.app",
-      "adaptiveIcon": { "backgroundColor": "#0d631b" },
+      "adaptiveIcon": { "backgroundColor": "#0a0a0a" },
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",

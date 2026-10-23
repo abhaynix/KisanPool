@@ -1,4 +1,4 @@
-/** f0.4_farmer_details — name plus the default pickup location (editable, not GPS-forced). */
+/** f0.4_farmer_details , name plus the default pickup location (editable, not GPS-forced). */
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -18,7 +18,7 @@ export default function FarmerDetails() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
 
-  // GPS is only a SUGGESTION for the initial value — the farmer confirms or
+  // GPS is only a SUGGESTION for the initial value , the farmer confirms or
   // replaces it in the picker. It is never forced.
   useEffect(() => {
     void (async () => {
@@ -65,7 +65,7 @@ export default function FarmerDetails() {
           loading={busy}
           disabled={!name.trim()}
           onPress={() => void save()}
-        />
+         variant="primary"/>
       }
     >
       <Header title="About you" subtitle="तुमची माहिती" />
@@ -87,7 +87,7 @@ export default function FarmerDetails() {
             <Txt variant="labelLg">{place?.name ?? 'Set your pickup place'}</Txt>
             <Txt variant="labelSm" color={colors.onSurfaceVariant}>
               So you do not have to type your village on every request. Search, drop a pin, or use
-              GPS — you can change it any time.
+              GPS , you can change it any time.
             </Txt>
           </View>
           <Txt variant="labelLg" color={colors.primary}>

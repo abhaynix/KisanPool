@@ -1,5 +1,5 @@
 /**
- * KYC upload — RC, DL, PAN plus bank details. RC + DL gate matching; PAN and the
+ * KYC upload , RC, DL, PAN plus bank details. RC + DL gate matching; PAN and the
  * bank account gate payouts (ADR-010, ADR-007).
  */
 import { useEffect, useState } from 'react';
@@ -102,7 +102,7 @@ export default function Kyc() {
   };
 
   return (
-    <Screen footer={<Button label="Done" onPress={() => router.replace('/(auth)/success')} />}>
+    <Screen footer={<Button label="Done" onPress={() => router.replace('/(auth)/success')}  variant="primary"/>}>
       <Header title="Verify your documents" subtitle="कागदपत्रे तपासा" />
 
       {loading ? null : verified ? (
@@ -152,7 +152,7 @@ export default function Kyc() {
 
             {status === 'REJECTED' ? (
               <Txt variant="labelSm" color={colors.error} style={{ marginTop: space.sm }}>
-                Rejected{reasons[doc.type] ? `: ${reasons[doc.type]}` : ''} — please upload a
+                Rejected{reasons[doc.type] ? `: ${reasons[doc.type]}` : ''} , please upload a
                 clearer photo.
               </Txt>
             ) : null}

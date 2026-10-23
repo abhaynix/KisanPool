@@ -1,5 +1,5 @@
 /**
- * Farmer · Profile — identity and preferences.
+ * Farmer · Profile , identity and preferences.
  *
  * Deliberately NOT a dashboard: no trip counts, no earnings, no operational
  * metrics. Those live in Bookings. This screen is who you are, how the app should
@@ -56,7 +56,7 @@ export default function FarmerProfile() {
       await persistUser(fresh);
       setUserState(fresh);
     } catch {
-      // offline is fine here — the cached profile is still correct enough to show
+      // offline is fine here , the cached profile is still correct enough to show
     }
   }, []);
 

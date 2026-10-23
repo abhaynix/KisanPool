@@ -1,11 +1,11 @@
 /**
- * onboarding_registration — who the driver is, then the vehicle. Starts PENDING.
+ * onboarding_registration , who the driver is, then the vehicle. Starts PENDING.
  *
  * The name is collected HERE because there is no other transporter onboarding
  * step that asks for it. Farmers get /(auth)/farmer-details; drivers went
  * straight from the OTP screen to this one, so `User.name` was never written and
- * every screen that shows a driver — their own profile, the farmer's comparison
- * list, the trip roster — fell back to the phone number.
+ * every screen that shows a driver , their own profile, the farmer's comparison
+ * list, the trip roster , fell back to the phone number.
  */
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -87,7 +87,7 @@ export default function VehicleRegister() {
           loading={busy}
           disabled={!valid}
           onPress={() => void save()}
-        />
+         variant="primary"/>
       }
     >
       <Header title="You and your vehicle" subtitle="तुम्ही आणि तुमचे वाहन" />

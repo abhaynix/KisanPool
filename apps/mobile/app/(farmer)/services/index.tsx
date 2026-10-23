@@ -1,5 +1,5 @@
 /**
- * Farm Services — discovery.
+ * Farm Services , discovery.
  *
  * The screen answers one question: "who near me can do this job, on this day, for
  * how much?" Everything on it exists to make those four things comparable.
@@ -110,7 +110,7 @@ export default function FarmServices() {
           operatorMode,
           areaAcres: Number(acres) > 0 ? Number(acres) : undefined,
         }),
-        // "four farmers near you want this too" — visible to the farmer as
+        // "four farmers near you want this too" , visible to the farmer as
         // reassurance that a provider is worth calling out for
         api.machineDemand(site.lat, site.lng).catch(() => []),
       ]);
@@ -134,7 +134,7 @@ export default function FarmServices() {
             <View style={{ paddingHorizontal: space.md }}>
               <Header
                 title="Farm services"
-                subtitle="शेती यंत्रे — भाड्याने"
+                subtitle="शेती यंत्रे , भाड्याने"
                 onBack={() => router.replace('/(farmer)/home')}
                 right={
                   <Button
@@ -156,7 +156,7 @@ export default function FarmServices() {
           </>
         }
       >
-        {/* what am I hiring? — the question that has to come first */}
+        {/* what am I hiring? , the question that has to come first */}
         <SectionHeader title="What do you need?" />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
           {POPULAR_CATEGORIES.map((item) => (
@@ -169,7 +169,7 @@ export default function FarmServices() {
           ))}
         </View>
 
-        {/* when, and how big — the two things that decide the price */}
+        {/* when, and how big , the two things that decide the price */}
         <Card style={{ marginTop: space.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
             <MaterialIcons name="event" size={20} color={colors.primary} />
@@ -188,7 +188,7 @@ export default function FarmServices() {
           </View>
         </Card>
 
-        {/* demand aggregation — honest, and only shown when it is real */}
+        {/* demand aggregation , honest, and only shown when it is real */}
         {cluster ? (
           <Banner tone="info">
             <View style={{ flexDirection: 'row', gap: space.sm }}>
@@ -213,7 +213,7 @@ export default function FarmServices() {
                 label="Set my location"
                 icon="edit-location"
                 onPress={() => router.push('/(farmer)/profile')}
-              />
+               variant="primary"/>
             }
           />
         ) : search.loading ? (
@@ -224,8 +224,8 @@ export default function FarmServices() {
           <EmptyState
             icon="agriculture"
             title={`No ${MACHINE_LABEL[category].toLowerCase()} listed near you`}
-            message="Providers are added as they join. Try another day, another machine, or check back — we will keep looking."
-            action={<Button label="Check again" icon="refresh" onPress={search.refresh} />}
+            message="Providers are added as they join. Try another day, another machine, or check back , we will keep looking."
+            action={<Button label="Check again" icon="refresh" onPress={search.refresh}  variant="secondary"/>}
           />
         ) : (
           <>
@@ -254,7 +254,7 @@ export default function FarmServices() {
               />
             ))}
 
-            {/* busy providers are shown, dimmed — a farmer should know they exist */}
+            {/* busy providers are shown, dimmed , a farmer should know they exist */}
             {busy.length > 0 ? (
               <>
                 <SectionHeader title="Busy at that time" />
@@ -271,7 +271,7 @@ export default function FarmServices() {
         visible={filtersOpen}
         onClose={() => setFiltersOpen(false)}
         title="Your job"
-        subtitle="Providers are priced for exactly this — change it and the prices change."
+        subtitle="Providers are priced for exactly this , change it and the prices change."
       >
         <Txt variant="labelLg" color={colors.onSurfaceVariant}>
           Time of day
@@ -299,14 +299,14 @@ export default function FarmServices() {
         </View>
 
         <Field
-          label="Area (acres) — for machines priced per acre"
+          label="Area (acres) , for machines priced per acre"
           value={acres}
           onChangeText={(text) => setAcres(text.replace(/[^0-9.]/g, ''))}
           keyboardType="decimal-pad"
           placeholder="e.g. 3"
         />
 
-        <Button label="Show providers" icon="search" onPress={() => setFiltersOpen(false)} />
+        <Button label="Show providers" icon="search" onPress={() => setFiltersOpen(false)}  variant="secondary"/>
       </Sheet>
 
       <BottomNav role="farmer" active="home" />
@@ -372,7 +372,7 @@ function MachineCard({
       ) : null}
 
       {!dimmed && onPress ? (
-        <Button label="See details & book" icon="event-available" onPress={onPress} style={{ marginTop: space.gutter }} />
+        <Button label="See details & book" icon="event-available" onPress={onPress} style={{ marginTop: space.gutter }}  variant="secondary"/>
       ) : null}
     </Card>
   );

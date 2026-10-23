@@ -1,9 +1,9 @@
 /**
- * Farmer · Support — the human and the assistant, in that order.
+ * Farmer · Support , the human and the assistant, in that order.
  *
  * Servo AI is offered here as one way to get help, not as the front door to the
  * app: a farmer with a load stuck on a truck wants a phone number first. The mic
- * FAB stays available everywhere, so this screen adds the things it cannot do —
+ * FAB stays available everywhere, so this screen adds the things it cannot do ,
  * calling a person, and reporting a specific problem against a real trip.
  */
 import { useCallback, useState } from 'react';
@@ -82,8 +82,8 @@ export default function Support() {
           />
         </Banner>
 
-        {/* Servo AI — a supporting feature, given its own card rather than the stage */}
-        <Card style={{ borderColor: colors.primary, borderWidth: 1 }}>
+        {/* Servo AI , a supporting feature, given its own card rather than the stage */}
+        <Card style={{ borderColor: colors.outlineVariant, borderWidth: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.gutter }}>
             <View style={s.aiIcon}>
               <MaterialIcons name="graphic-eq" size={24} color={colors.onPrimary} />
@@ -98,13 +98,13 @@ export default function Support() {
                 </View>
               </View>
               <Txt variant="labelSm" color={colors.onSurfaceVariant}>
-                Ask anything in Marathi, Hindi or English — by voice.
+                Ask anything in Marathi, Hindi or English , by voice.
               </Txt>
             </View>
           </View>
           <Divider />
           <Txt variant="bodyMd" color={colors.onSurfaceVariant}>
-            "मला उद्या कांदा लासलगावला पाठवायचा आहे" — say it and Servo will set up the request for
+            "मला उद्या कांदा लासलगावला पाठवायचा आहे" , say it and Servo will set up the request for
             you. It never pays or books on its own; you always confirm.
           </Txt>
           <Txt variant="labelSm" color={colors.outline} style={{ marginTop: space.sm }}>
@@ -176,7 +176,7 @@ export default function Support() {
       >
         <Txt variant="bodyMd" color={colors.onSurfaceVariant} style={{ marginBottom: space.md }}>
           Our team will call you back on {user?.phone ?? 'your registered number'}. For anything
-          urgent, please call us directly — it is always faster.
+          urgent, please call us directly , it is always faster.
         </Txt>
         <Button
           label={`Call ${SUPPORT_PHONE}`}
@@ -185,7 +185,7 @@ export default function Support() {
             setTopic(null);
             void Linking.openURL(`tel:${SUPPORT_PHONE.replace(/-/g, '')}`);
           }}
-        />
+         variant="primary"/>
         <Button
           label="Request a call back"
           variant="secondary"
@@ -221,12 +221,12 @@ const s = {
     width: 48,
     height: 48,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryContainer,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
   aiTag: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryContainer,
     borderRadius: radius.sm,
     paddingHorizontal: space.xs,
   },

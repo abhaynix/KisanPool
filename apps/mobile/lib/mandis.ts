@@ -3,7 +3,7 @@
  *
  * Maharashtra APMC markets with indicative price bands. This is demo/reference
  * data, deliberately kept in ONE place rather than scattered through the mandi
- * screens as literals — the discovery and detail screens read every number they
+ * screens as literals , the discovery and detail screens read every number they
  * render from here, so there is exactly one story to keep consistent.
  *
  * Nothing here feeds pricing. A trip's cost is computed server-side from distance
@@ -18,7 +18,7 @@ export interface CommodityPrice {
   crop: string;
   min: number;
   max: number;
-  /** the price most lots actually clear at — what a farmer plans against */
+  /** the price most lots actually clear at , what a farmer plans against */
   modal: number;
   trend: Trend;
 }
@@ -164,7 +164,7 @@ export const MANDIS: Mandi[] = [
     lng: 72.844,
     categories: ['Flowers'],
     crops: ['Marigold', 'Rose', 'Jasmine', 'Tuberose'],
-    // flower markets trade before dawn and are finished by midday — the produce
+    // flower markets trade before dawn and are finished by midday , the produce
     // has to reach shops and temples the same morning
     hours: '4:00 AM – 12:00 PM',
     opensAt: 4 * 60,
@@ -256,7 +256,7 @@ export function distanceFrom(
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(h));
 }
 
-/** Rough road time at a rural-highway average — good enough to compare two mandis. */
+/** Rough road time at a rural-highway average , good enough to compare two mandis. */
 const AVERAGE_SPEED_KMPH = 38;
 
 export const travelMinutes = (distanceKm: number): number =>
@@ -282,7 +282,7 @@ export function closingLabel(mandi: Mandi): string {
   return `${display}:${String(minute).padStart(2, '0')} ${suffix}`;
 }
 
-/** The headline rate a discovery card shows — the best modal price on offer. */
+/** The headline rate a discovery card shows , the best modal price on offer. */
 export const topModalPrice = (mandi: Mandi): CommodityPrice =>
   mandi.prices.reduce((best, price) => (price.modal > best.modal ? price : best), mandi.prices[0]);
 
