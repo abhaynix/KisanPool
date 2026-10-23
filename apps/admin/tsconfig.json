@@ -12,7 +12,10 @@
     "isolatedModules": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
-    "paths": { "@kisanpool/shared": ["../../packages/shared/src/index.ts"] }
+    "paths": {
+      "@kisanpool/shared": ["../../packages/shared/src/index.ts"],
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src", "vite.config.ts", "../../packages/shared/src"]
 }

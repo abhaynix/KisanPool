@@ -1,9 +1,10 @@
 /**
- * Mandis — demand by destination.
+ * Mandis: demand by destination.
  *
  * Aggregated server-side from real requests, trips and shipments, so this table
  * says where produce is actually going rather than restating a static list.
  */
+import { Table } from '../components/ui/table';
 import { api } from '../api';
 import { Empty, ErrorBox, Freshness, Meter, SkeletonTable, Stat, Toolbar, rupees, useRemote } from '../ui';
 
@@ -44,7 +45,7 @@ export function MandisTab() {
           </div>
 
           <div className="card table-wrap">
-            <table>
+            <Table>
               <thead>
                 <tr>
                   <th>Mandi</th>
@@ -77,7 +78,7 @@ export function MandisTab() {
                       {row.openRequests > 0 ? (
                         <span className="badge warn">{row.openRequests}</span>
                       ) : (
-                        <span className="muted">—</span>
+                        <span className="muted">Not available</span>
                       )}
                     </td>
                     <td style={{ textAlign: 'right' }}>{row.trips}</td>
@@ -85,7 +86,7 @@ export function MandisTab() {
                       {row.activeTrips > 0 ? (
                         <span className="badge info">{row.activeTrips}</span>
                       ) : (
-                        <span className="muted">—</span>
+                        <span className="muted">Not available</span>
                       )}
                     </td>
                     <td style={{ textAlign: 'right' }}>{row.tonnes.toFixed(1)}</td>
@@ -96,7 +97,7 @@ export function MandisTab() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
           </div>
         </>
       )}

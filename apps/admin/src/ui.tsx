@@ -1,51 +1,57 @@
 import type { ReactNode } from 'react';
+import { Alert } from './components/ui/alert';
+import { Button } from './components/ui/button';
+import { Card } from './components/ui/card';
+import { Chip } from './components/ui/chip';
+import { Skeleton } from './components/ui/skeleton';
+import { Spinner } from './components/ui/spinner';
 
 export function Badge({ value }: { value: string }) {
-  // one tone map across all three pooling state machines — a state means the same
+  // one tone map across all three pooling state machines: a state means the same
   // thing to an operator wherever it is rendered
   const tone =
     {
-      VERIFIED: 'good',
-      DELIVERED: 'good',
-      PAID: 'good',
-      AVAILABLE: 'good',
-      ACTIVE: 'good',
-      COMPLETED: 'good',
-      CONFIRMED: 'good',
-      SELECTED: 'good',
-      PENDING: 'warn',
-      PAYMENT_PENDING: 'warn',
-      CREATED: 'warn',
-      OPEN: 'warn',
-      FORMING: 'warn',
-      ASSIGNED: 'warn',
-      AT_DESTINATION: 'warn',
-      BUSY: 'info',
-      IN_TRANSIT: 'info',
-      EN_ROUTE: 'info',
-      ARRIVED: 'info',
-      PICKED_UP: 'info',
-      TRANSPORTER_INTERESTED: 'info',
-      INTERESTED: 'info',
-      REJECTED: 'bad',
-      CANCELLED: 'bad',
-      FAILED: 'bad',
-      EXPIRED: 'bad',
-      WITHDRAWN: 'bad',
-      OFFLINE: '',
-    }[value] ?? '';
-  return <span className={`badge ${tone}`}>{value.replace(/_/g, ' ').toLowerCase()}</span>;
+      VERIFIED: 'success',
+      DELIVERED: 'success',
+      PAID: 'success',
+      AVAILABLE: 'success',
+      ACTIVE: 'success',
+      COMPLETED: 'success',
+      CONFIRMED: 'success',
+      SELECTED: 'success',
+      PENDING: 'warning',
+      PAYMENT_PENDING: 'warning',
+      CREATED: 'warning',
+      OPEN: 'warning',
+      FORMING: 'warning',
+      ASSIGNED: 'warning',
+      AT_DESTINATION: 'warning',
+      BUSY: 'special',
+      IN_TRANSIT: 'special',
+      EN_ROUTE: 'special',
+      ARRIVED: 'special',
+      PICKED_UP: 'special',
+      TRANSPORTER_INTERESTED: 'special',
+      INTERESTED: 'special',
+      REJECTED: 'danger',
+      CANCELLED: 'danger',
+      FAILED: 'danger',
+      EXPIRED: 'danger',
+      WITHDRAWN: 'danger',
+      OFFLINE: 'default',
+    }[value] ?? 'default';
+  return <Chip tone={tone as 'default' | 'success' | 'danger' | 'special' | 'warning'}>{value.replace(/_/g, ' ').toLowerCase()}</Chip>;
 }
 
 export function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="card">
+    <Card className="card">
       <div className="label-sm muted">{label}</div>
       <div className="display-lg" style={{ marginTop: 4 }}>
         {value}
       </div>
       {hint ? <div className="label-sm muted">{hint}</div> : null}
-    </div>
+    </Card>
   );
 }
 
@@ -60,29 +66,23 @@ export function Section({ title, children }: { title: string; children: ReactNod
 
 export function Empty({ message }: { message: string }) {
   return (
-    <div className="card" style={{ textAlign: 'center', padding: 'var(--s-xl)' }}>
+    <Card className="card" style={{ textAlign: 'center', padding: 'var(--s-xl)' }}>
       <div className="muted">{message}</div>
-    </div>
+    </Card>
   );
 }
 
 export function ErrorBox({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const err = error as { code?: string; message?: string };
   return (
-    <div
-      className="card"
-      style={{ borderColor: 'var(--error)', background: 'var(--error-container)' }}
-    >
-      <div className="label-lg" style={{ color: 'var(--on-error-container)' }}>
-        {err.code ?? 'ERROR'}
-      </div>
-      <div className="body-md" style={{ color: 'var(--on-error-container)', marginTop: 4 }}>
+    <div className="stack">
+      <Alert tone="danger" title={err.code?.replace(/_/g, ' ').toLowerCase() ?? 'Something went wrong'}>
         {err.message ?? 'Something went wrong.'}
-      </div>
+      </Alert>
       {onRetry ? (
-        <button className="btn secondary" style={{ marginTop: 12 }} onClick={onRetry}>
+        <Button variant="outline" className="w-fit" onClick={onRetry}>
           Try again
-        </button>
+        </Button>
       ) : null}
     </div>
   );
@@ -90,13 +90,16 @@ export function ErrorBox({ error, onRetry }: { error: unknown; onRetry?: () => v
 
 export function Loading() {
   return (
-    <div className="card" style={{ textAlign: 'center', padding: 'var(--s-xl)' }}>
-      <div className="muted">Loading…</div>
-    </div>
+    <Card className="card" style={{ textAlign: 'center', padding: 'var(--s-xl)' }}>
+      <div className="row" style={{ justifyContent: 'center' }}>
+        <Spinner label="Loading admin data" />
+        <span className="muted">Loading…</span>
+      </div>
+    </Card>
   );
 }
 
-/** Everything the console shows comes straight from the API — nothing is computed here. */
+/** Everything the console shows comes straight from the API: nothing is computed here. */
 export const rupees = (v: number): string => `₹${Math.round(v).toLocaleString('en-IN')}`;
 export const kg = (v: number): string => (v >= 1000 ? `${(v / 1000).toFixed(1)} t` : `${v} kg`);
 export const when = (iso: string | null): string =>
@@ -107,10 +110,10 @@ export const when = (iso: string | null): string =>
         hour: 'numeric',
         minute: '2-digit',
       })
-    : '—';
+    : 'Not available';
 
 // ---------------------------------------------------------------------------
-// data loading — one shape for every tab
+// data loading: one shape for every tab
 // ---------------------------------------------------------------------------
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -162,11 +165,11 @@ export function useRemote<T>(fetcher: () => Promise<T>, everyMs?: number): Remot
 /** Table-shaped placeholder for a tab's first load. */
 export function SkeletonTable({ rows = 5 }: { rows?: number }) {
   return (
-    <div className="card stack">
+    <Card className="card stack">
       {Array.from({ length: rows }).map((_, index) => (
-        <div key={index} className="skeleton" style={{ height: 20, width: `${95 - index * 7}%` }} />
+        <Skeleton key={index} className="skeleton" style={{ height: 20, width: `${95 - index * 7}%` }} />
       ))}
-    </div>
+    </Card>
   );
 }
 
@@ -178,16 +181,16 @@ export function Toolbar({ children }: { children: ReactNode }) {
   );
 }
 
-/** "Updated 12:04:33" — an operator needs to know how old a board is. */
+/** "Updated 12:04:33": an operator needs to know how old a board is. */
 export function Freshness({ at, onRefresh }: { at: Date | null; onRefresh: () => void }) {
   return (
     <div className="row">
       <span className="label-sm muted">
         {at ? `Updated ${at.toLocaleTimeString('en-IN')}` : 'Loading…'}
       </span>
-      <button className="btn ghost" onClick={onRefresh}>
+      <Button variant="ghost" size="sm" onClick={onRefresh}>
         Refresh
-      </button>
+      </Button>
     </div>
   );
 }

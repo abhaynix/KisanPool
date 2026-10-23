@@ -1,5 +1,5 @@
 /**
- * Resilience & Recovery — the operator's blackout board (ADR-044).
+ * Resilience & Recovery: the operator's blackout board (ADR-044).
  *
  * Every number here is READ FROM THE ACTUAL RECOVERY STATE. There are no fake
  * success counts and no hardcoded ticks: if integrity did not pass, this says so
@@ -7,6 +7,7 @@
  * actually reached RECOVERED, which it only does when the checks passed and no
  * journalled operation was left unresolved.
  */
+import { Table } from '../components/ui/table';
 import { useCallback, useEffect, useState } from 'react';
 import type { IntegrityReport, ResilienceStatusDTO } from '@kisanpool/shared';
 import { api } from '../api';
@@ -46,7 +47,7 @@ export function ResilienceTab() {
 
   useEffect(() => load(), [load]);
 
-  // the board is only useful if it is current — an incident moves in seconds
+  // the board is only useful if it is current: an incident moves in seconds
   useEffect(() => {
     const timer = setInterval(() => load(true), REFRESH_MS);
     return () => clearInterval(timer);
@@ -71,7 +72,7 @@ export function ResilienceTab() {
       setIntegrity(report);
       setNote(
         report.passed
-          ? `Integrity checks passed — ${report.checked} records verified.`
+          ? `Integrity checks passed: ${report.checked} records verified.`
           : `${report.findings.filter((f) => f.classification === 'INCONSISTENT' || f.classification === 'MANUAL_REVIEW').length} finding(s) need attention.`,
       );
     });
@@ -82,7 +83,7 @@ export function ResilienceTab() {
       setNote(
         `Recovery finished in state ${result.finalState}. ` +
           `Replay: ${result.replay.superseded} already applied, ${result.replay.unresolved} unresolved. ` +
-          `Integrity ${result.integrityPassed ? 'passed' : 'FAILED'}. ` +
+          `Integrity ${result.integrityPassed ? 'passed' : 'failed'}. ` +
           `${result.snapshotsRebuilt} snapshot(s) rebuilt.`,
       );
       setIntegrity(null);
@@ -117,11 +118,10 @@ export function ResilienceTab() {
             className="card"
             style={{
               marginTop: 8,
-              borderColor: 'var(--error)',
-              background: 'var(--error-container)',
+              background: 'transparent',
             }}
           >
-            <strong>Fault simulation active — {data?.simulation?.mode}</strong>
+            <strong style={{ color: 'var(--error)' }}>Fault simulation active: {data?.simulation?.mode}</strong>
             <div className="label-sm">
               Started {when(data!.simulation!.startedAt)}
               {data!.simulation!.scope.length
@@ -138,7 +138,7 @@ export function ResilienceTab() {
         >
           <Dependency
             label="Database"
-            state={data?.database.state ?? '—'}
+            state={data?.database.state ?? 'Not available'}
             detail={data?.database.detail ?? ''}
             extra={
               data?.database.replicaSet
@@ -148,7 +148,7 @@ export function ResilienceTab() {
           />
           <Dependency
             label="Cache (Redis)"
-            state={data?.cache.state ?? '—'}
+            state={data?.cache.state ?? 'Not available'}
             detail={data?.cache.detail ?? ''}
           />
           <Dependency
@@ -175,7 +175,7 @@ export function ResilienceTab() {
 
       {/* ---- incident ---- */}
       {incident ? (
-        <div className="card" style={{ borderColor: 'var(--error)' }}>
+        <div className="card">
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <span className="headline-md">
               Incident {incident.id} · {incident.kind}
@@ -199,7 +199,7 @@ export function ResilienceTab() {
             <Metric label="Unresolved" value={incident.failedEvents} bad={incident.failedEvents > 0} />
             <Metric
               label="Snapshots rebuilt"
-              value={incident.snapshotsRebuilt ?? '—'}
+              value={incident.snapshotsRebuilt ?? 'Not available'}
             />
           </div>
 
@@ -209,7 +209,7 @@ export function ResilienceTab() {
               <li key={`${stage.stage}-${i}`} className="body-md">
                 <span className={stateTone(stage.stage)}>{stage.stage}</span>{' '}
                 <span className="label-sm muted">
-                  {when(stage.at)} — {stage.detail}
+                  {when(stage.at)}: {stage.detail}
                 </span>
               </li>
             ))}
@@ -217,8 +217,8 @@ export function ResilienceTab() {
 
           {/* the honest completion claim: only what actually happened */}
           {incident.state === 'RECOVERED' ? (
-            <div className="card" style={{ marginTop: 10, borderColor: 'var(--primary)' }}>
-              <strong>SYSTEM RECOVERED</strong>
+            <div className="card" style={{ marginTop: 10 }}>
+              <strong style={{ color: 'var(--success)' }}>System recovered</strong>
               <div className="label-sm">
                 ✓ Journal reconciled ({incident.replayedEvents} replayed,{' '}
                 {incident.supersededEvents} already applied, {incident.failedEvents} unresolved) ·
@@ -227,11 +227,11 @@ export function ResilienceTab() {
               </div>
             </div>
           ) : incident.state === 'MANUAL_REVIEW' ? (
-            <div className="card" style={{ marginTop: 10, borderColor: 'var(--error)' }}>
-              <strong>NEEDS MANUAL REVIEW</strong>
+            <div className="card" style={{ marginTop: 10 }}>
+              <strong style={{ color: 'var(--error)' }}>Needs manual review</strong>
               <div className="label-sm">
                 Recovery ran but did not fully validate. Nothing ambiguous has been changed
-                automatically — review the findings below before declaring this resolved.
+                automatically: review the findings below before declaring this resolved.
               </div>
             </div>
           ) : null}
@@ -242,11 +242,11 @@ export function ResilienceTab() {
       <div className="card">
         <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <span className="headline-md">Cache layer (Redis)</span>
-          <span className={depTone(data?.cache.state ?? '—')}>{data?.cache.state ?? '—'}</span>
+          <span className={depTone(data?.cache.state ?? 'Not available')}>{data?.cache.state ?? 'Not available'}</span>
         </div>
         <div className="label-sm muted" style={{ marginBottom: 8 }}>
           Switching Redis off exercises the failure matrix directly: the cache disappears while
-          MongoDB stays healthy, and the application must simply keep working. It is safe — the
+          MongoDB stays healthy, and the application must simply keep working. It is safe: the
           recovery journal is an fsync&apos;d file regardless of Redis, so nothing pending is
           stranded.
         </div>
@@ -289,12 +289,16 @@ export function ResilienceTab() {
           {data?.cache.detail}
         </div>
         <div className="label-sm muted" style={{ marginTop: 4 }}>
-          Journal backend: <strong>{data?.journal.backend}</strong>{' '}
-          {data?.journal.backend === 'REDIS_AOF'
-            ? '— AOF confirmed, Redis is mirroring the journal'
+          Journal backend: <strong>{data?.journal.backend === 'REDIS_AOF'
+            ? 'Redis with AOF'
             : data?.journal.backend === 'REDIS_CACHE_ONLY'
-              ? '— reachable but NOT AOF-backed, so it is used for snapshots only, never for pending intent'
-              : '— intent is kept on the local fsync’d file'}
+              ? 'Redis cache only'
+              : 'Local fsync file'}</strong>{' '}
+          {data?.journal.backend === 'REDIS_AOF'
+            ? 'AOF is confirmed, and Redis is mirroring the journal'
+            : data?.journal.backend === 'REDIS_CACHE_ONLY'
+              ? 'Redis is reachable but not AOF-backed, so it is used for snapshots only, never for pending intent'
+              : 'Intent is kept in the local fsync’d file'}
         </div>
       </div>
 
@@ -302,7 +306,7 @@ export function ResilienceTab() {
       <div className="card">
         <span className="headline-md">Controls</span>
         <div className="label-sm muted" style={{ marginBottom: 8 }}>
-          Simulations are reversible and destroy no data — they make the data layer <em>behave</em>{' '}
+          Simulations are reversible and destroy no data: they make the data layer <em>behave</em>{' '}
           as though it were failing so the real detector and recovery controller run.
         </div>
         <div className="row" style={{ flexWrap: 'wrap' }}>
@@ -354,14 +358,14 @@ export function ResilienceTab() {
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <span className="headline-md">Integrity report</span>
             <span className={integrity.passed ? 'badge good' : 'badge bad'}>
-              {integrity.passed ? 'PASSED' : 'NEEDS ATTENTION'}
+              {integrity.passed ? 'Passed' : 'Needs attention'}
             </span>
           </div>
           <div className="label-sm muted">
             {integrity.checked} records checked at {when(integrity.ranAt)}
           </div>
           <div className="table-wrap" style={{ marginTop: 8 }}>
-            <table>
+            <Table>
               <thead>
                 <tr>
                   <th>Check</th>
@@ -398,7 +402,7 @@ export function ResilienceTab() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
           </div>
         </div>
       ) : null}

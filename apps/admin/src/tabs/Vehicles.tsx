@@ -1,3 +1,4 @@
+import { Table } from '../components/ui/table';
 import { useEffect, useState } from 'react';
 import { api, type AdminVehicle } from '../api';
 import { Badge, Empty, ErrorBox, Loading, kg, rupees, when } from '../ui';
@@ -7,7 +8,7 @@ const REFRESH_MS = 15_000;
 /**
  * On-road view: which vehicles are moving, how much of each is already sold, and
  * where they last reported from. An operator can change status, verification and
- * location — except putting an unverified vehicle on the road, which the server
+ * location: except putting an unverified vehicle on the road, which the server
  * refuses.
  *
  * A vehicle now carries a shared pool rather than one farmer's load, so the useful
@@ -57,7 +58,7 @@ export function VehiclesTab() {
 
     const [lat, lng] = input.split(',').map((n) => Number(n.trim()));
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      window.alert('Enter coordinates as "lat,lng" — for example 18.5204,73.8567');
+      window.alert('Enter coordinates as "lat,lng": for example 18.5204,73.8567');
       return;
     }
     void update(vehicle._id, { currentLocation: { lat, lng } });
@@ -94,7 +95,7 @@ export function VehiclesTab() {
         <Empty message={onlyOnRoad ? 'No vehicle is on a trip right now.' : 'No vehicles registered.'} />
       ) : (
         <div className="card table-wrap" style={{ padding: 0 }}>
-          <table>
+          <Table>
             <thead>
               <tr>
                 <th>Vehicle</th>
@@ -116,7 +117,7 @@ export function VehiclesTab() {
                     </div>
                   </td>
                   <td>
-                    {vehicle.owner?.name ?? '—'}
+                    {vehicle.owner?.name ?? 'Not available'}
                     <div className="label-sm muted">{vehicle.owner?.phone}</div>
                   </td>
                   <td>
@@ -195,7 +196,7 @@ export function VehiclesTab() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </div>
       )}
     </div>

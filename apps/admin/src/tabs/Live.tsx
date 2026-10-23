@@ -1,3 +1,4 @@
+import { Table } from '../components/ui/table';
 import { useEffect, useState, type ReactNode } from 'react';
 import type { OpsPredictionDTO, RiskLevel } from '@kisanpool/shared';
 import { api, type LiveOps, type LiveTrip } from '../api';
@@ -9,7 +10,7 @@ const REFRESH_MS = 15_000;
  * Live Operations (PROMPT_1 §13 A2).
  *
  * Everything here comes from one /admin/live read so the whole board describes a
- * single moment — four independent polls would put four different moments on one
+ * single moment: four independent polls would put four different moments on one
  * screen and make "is this trip stuck?" unanswerable.
  */
 export function LiveTab() {
@@ -24,13 +25,13 @@ export function LiveTab() {
     setError(undefined);
     if (!quiet) setData(null);
     api.live(stuckMinutes).then(setData).catch(setError);
-    // advisory scoring — its own read, never blocks the operations board
+    // advisory scoring: its own read, never blocks the operations board
     api.predictions().then(setPredictions).catch(() => setPredictions(null));
   };
 
   useEffect(() => load(), [stuckMinutes]);
 
-  // a trip board that is a minute old is worse than no board — it makes an
+  // a trip board that is a minute old is worse than no board: it makes an
   // operator act on a pickup that already happened
   useEffect(() => {
     if (!live) return;
@@ -179,22 +180,15 @@ function AlertCard({
   children: ReactNode;
 }) {
   return (
-    <div
-      className="card"
-      style={
-        count
-          ? { borderColor: 'var(--tertiary-container)', background: 'var(--tertiary-container)' }
-          : undefined
-      }
-    >
+    <div className="card">
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <span
           className="label-lg"
-          style={count ? { color: 'var(--on-tertiary-container)' } : undefined}
+          style={count ? { color: 'var(--warning)' } : undefined}
         >
           {title}
         </span>
-        <span className="display-lg" style={count ? { color: 'var(--on-tertiary-container)' } : undefined}>
+        <span className="display-lg" style={count ? { color: 'var(--warning)' } : undefined}>
           {count}
         </span>
       </div>
@@ -226,7 +220,7 @@ const levelClass = (level: string): string =>
   level === 'HIGH' ? 'badge bad' : level === 'MEDIUM' ? 'badge warn' : 'badge';
 
 /**
- * Predictive Insights (ADR-041) — advisory only. Deterministic scoring over live
+ * Predictive Insights (ADR-041): advisory only. Deterministic scoring over live
  * signals; it never changes a trip, a price or a dispatch. Shows only what is at
  * MEDIUM or above so it never buries the operations board.
  */
@@ -306,7 +300,7 @@ function PredictionsPanel({ data }: { data: OpsPredictionDTO | null }) {
       </div>
 
       <div className="label-sm muted" style={{ marginTop: 8 }}>
-        Advisory only — predictions never cancel a trip, change a price, reroute a vehicle or
+        Advisory only: predictions never cancel a trip, change a price, reroute a vehicle or
         block anyone. The backend stays authoritative.
       </div>
     </div>
@@ -327,10 +321,7 @@ function TripCard({
     capacity.totalKg ? `${Math.min(100, (value / capacity.totalKg) * 100)}%` : '0%';
 
   return (
-    <div
-      className="card"
-      style={trip.stuck ? { borderColor: 'var(--error)' } : undefined}
-    >
+    <div className="card">
       <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <div className="row">
@@ -342,7 +333,7 @@ function TripCard({
           </div>
           <div className="label-sm muted" style={{ marginTop: 4 }}>
             {trip.transporter?.name || 'Unknown transporter'} ·{' '}
-            {trip.vehicle?.registrationNumber ?? 'no vehicle'} ({trip.vehicle?.vehicleType ?? '—'}) ·{' '}
+            {trip.vehicle?.registrationNumber ?? 'no vehicle'} ({trip.vehicle?.vehicleType ?? 'Not available'}) ·{' '}
             {trip.routeDistanceKm} km · {rupees(trip.estimatedRouteCost)} route cost · pricing v
             {trip.pricingVersion}
           </div>
@@ -404,10 +395,10 @@ function TripCard({
 
       {open ? (
         trip.shipments.length === 0 ? (
-          <Empty message="This trip has no shipments yet — it is still forming." />
+          <Empty message="This trip has no shipments yet: it is still forming." />
         ) : (
           <div className="table-wrap" style={{ marginTop: 'var(--s-sm)' }}>
-            <table>
+            <Table>
               <thead>
                 <tr>
                   <th>#</th>
@@ -431,7 +422,7 @@ function TripCard({
                       {shipment.cropType}
                       <div className="label-sm muted">{kg(shipment.quantityKg)}</div>
                     </td>
-                    <td className="label-sm muted">{shipment.pickup?.name || '—'}</td>
+                    <td className="label-sm muted">{shipment.pickup?.name || 'Not available'}</td>
                     <td>
                       <Badge value={shipment.state} />
                     </td>
@@ -452,7 +443,7 @@ function TripCard({
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
           </div>
         )
       ) : null}

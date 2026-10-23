@@ -2,9 +2,10 @@
  * A3 · Servo AI activity.
  *
  * The language mix is the headline. Servo exists so a farmer who would not use a
- * form in English can still book a trip by speaking Marathi — so "how many
+ * form in English can still book a trip by speaking Marathi: so "how many
  * sessions are not in English" is the number that says whether it is working.
  */
+import { Table } from '../components/ui/table';
 import { api } from '../api';
 import {
   Badge,
@@ -45,7 +46,7 @@ export function AiTab() {
   return (
     <>
       <Toolbar>
-        <div className="label-sm muted">Servo AI — voice and chat sessions</div>
+        <div className="label-sm muted">Servo AI: voice and chat sessions</div>
         <Freshness at={ai.refreshedAt} onRefresh={ai.refresh} />
       </Toolbar>
 
@@ -61,7 +62,7 @@ export function AiTab() {
             <Stat
               label="In an Indian language"
               value={
-                totalSessions ? `${Math.round((nonEnglish / totalSessions) * 100)}%` : '—'
+                totalSessions ? `${Math.round((nonEnglish / totalSessions) * 100)}%` : 'Not available'
               }
               hint={`${nonEnglish} of ${totalSessions} sessions`}
             />
@@ -106,7 +107,7 @@ export function AiTab() {
               <Empty message="Nobody has used the assistant yet. Sessions appear here as farmers start speaking to Servo." />
             ) : (
               <div className="card table-wrap">
-                <table>
+                <Table>
                   <thead>
                     <tr>
                       <th>User</th>
@@ -133,21 +134,21 @@ export function AiTab() {
                               {session.lastMessage}
                             </>
                           ) : (
-                            '—'
+                            'Not available'
                           )}
                         </td>
                         <td>
                           {session.pending ? (
                             <Badge value="PENDING" />
                           ) : (
-                            <span className="muted">—</span>
+                            <span className="muted">Not available</span>
                           )}
                         </td>
                         <td className="label-sm muted">{when(session.updatedAt)}</td>
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </Table>
               </div>
             )}
           </Section>

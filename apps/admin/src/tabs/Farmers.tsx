@@ -1,9 +1,10 @@
 /**
- * Farmers — the supply side of the network.
+ * Farmers: the supply side of the network.
  *
  * `requestCount` vs `confirmedCount` is the column pair that matters: a farmer
  * who posts often but rarely confirms is a farmer the pool is failing.
  */
+import { Table } from '../components/ui/table';
 import { useState } from 'react';
 import { api } from '../api';
 import { Empty, ErrorBox, Freshness, SkeletonTable, Stat, Toolbar, useRemote, when } from '../ui';
@@ -60,7 +61,7 @@ export function FarmersTab() {
           </div>
 
           <div className="card table-wrap">
-            <table>
+            <Table>
               <thead>
                 <tr>
                   <th>Name</th>
@@ -78,7 +79,7 @@ export function FarmersTab() {
                   <tr key={row._id}>
                     <td style={{ fontWeight: 600 }}>{row.name}</td>
                     <td>{row.phone}</td>
-                    <td className="muted">{row.location ?? '—'}</td>
+                    <td className="muted">{row.location ?? 'Not available'}</td>
                     <td className="label-sm muted">{row.language}</td>
                     <td style={{ textAlign: 'right' }}>{row.requestCount}</td>
                     <td style={{ textAlign: 'right' }}>
@@ -89,13 +90,13 @@ export function FarmersTab() {
                       )}
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      {row.ratingCount ? `${row.ratingAvg.toFixed(1)}★` : '—'}
+                      {row.ratingCount ? `${row.ratingAvg.toFixed(1)}★` : 'Not available'}
                     </td>
                     <td className="label-sm muted">{when(row.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
           </div>
         </>
       )}

@@ -1,10 +1,11 @@
 /**
- * A3 · Alerts & issues — everything that needs a human, in one queue.
+ * A3 · Alerts & issues: everything that needs a human, in one queue.
  *
  * Three feeds the live board already derives, plus the KYC backlog. Each row says
  * what is wrong and how long it has been wrong, because "how long" is what
  * decides which one an operator picks up first.
  */
+import { Table } from '../components/ui/table';
 import { api } from '../api';
 import {
   Badge,
@@ -60,7 +61,7 @@ export function AlertsTab() {
           {alerts && alerts.stuckTrips.length > 0 ? (
             <Section title="Delayed trips">
               <div className="card table-wrap">
-                <table>
+                <Table>
                   <thead>
                     <tr>
                       <th>Transporter</th>
@@ -85,7 +86,7 @@ export function AlertsTab() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </Table>
               </div>
             </Section>
           ) : null}
@@ -93,7 +94,7 @@ export function AlertsTab() {
           {alerts && alerts.unclaimedRequests.length > 0 ? (
             <Section title="Requests no transporter has accepted">
               <div className="card table-wrap">
-                <table>
+                <Table>
                   <thead>
                     <tr>
                       <th>Farmer</th>
@@ -118,7 +119,7 @@ export function AlertsTab() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </Table>
               </div>
             </Section>
           ) : null}
@@ -126,7 +127,7 @@ export function AlertsTab() {
           {alerts && alerts.idleVehicles.length > 0 ? (
             <Section title="Verified vehicles sitting idle">
               <div className="card table-wrap">
-                <table>
+                <Table>
                   <thead>
                     <tr>
                       <th>Owner</th>
@@ -151,7 +152,7 @@ export function AlertsTab() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </Table>
               </div>
             </Section>
           ) : null}

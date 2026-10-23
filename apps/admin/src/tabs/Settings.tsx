@@ -1,5 +1,5 @@
 /**
- * Settings — what this console is pointed at and what the platform's policies are.
+ * Settings: what this console is pointed at and what the platform's policies are.
  *
  * Read-only by design. Policy numbers are server configuration (CLAUDE.md: policy
  * numbers are config, not literals), so the console reports them rather than
@@ -24,7 +24,7 @@ export function SettingsTab() {
         <div className="card stack">
           <Row
             label="Capacity reservation"
-            value="Only a farmer's confirmation reserves capacity — a transporter's acceptance never does"
+            value="Only a farmer's confirmation reserves capacity: a transporter's acceptance never does"
           />
           <Row
             label="Booking transaction"
@@ -44,7 +44,7 @@ export function SettingsTab() {
 
       <Section title="Security">
         <div className="card stack">
-          <Row label="Admin auth" value="A JWT claim, never a User.role — marketplace tokens are refused" />
+          <Row label="Admin auth" value="A JWT claim, never a User.role: marketplace tokens are refused" />
           <Row
             label="Credentials"
             value="Set ADMIN_USERNAME and ADMIN_PASSWORD in the server .env before exposing this console"

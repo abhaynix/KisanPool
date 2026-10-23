@@ -1,5 +1,5 @@
 /**
- * Bookings — the demand side, end to end.
+ * Bookings: the demand side, end to end.
  *
  * The two pooling states are shown in separate columns on purpose. "Accepted" is
  * how many transporters put their hand up (which reserves nothing); "Confirmed"
@@ -7,6 +7,7 @@
  * confirmation is the single most useful thing an operator can spot here, and
  * collapsing the columns would hide it.
  */
+import { Table } from '../components/ui/table';
 import { useState } from 'react';
 import { api } from '../api';
 import { Badge, Empty, ErrorBox, Freshness, SkeletonTable, Stat, Toolbar, kg, rupees, useRemote, when } from '../ui';
@@ -71,7 +72,7 @@ export function BookingsTab() {
             <Empty message="No requests match that filter." />
           ) : (
             <div className="card table-wrap">
-              <table>
+              <Table>
                 <thead>
                   <tr>
                     <th>Farmer</th>
@@ -88,7 +89,7 @@ export function BookingsTab() {
                   {bookings.data.requests.map((row) => (
                     <tr key={row._id}>
                       <td>
-                        <div style={{ fontWeight: 600 }}>{row.farmer?.name ?? '—'}</div>
+                        <div style={{ fontWeight: 600 }}>{row.farmer?.name ?? 'Not available'}</div>
                         <div className="label-sm muted">{row.farmer?.phone ?? ''}</div>
                       </td>
                       <td>
@@ -106,7 +107,7 @@ export function BookingsTab() {
                         {row.offerCount > 0 ? (
                           <span className="badge info">{row.offerCount}</span>
                         ) : (
-                          <span className="muted">—</span>
+                          <span className="muted">Not available</span>
                         )}
                       </td>
                       <td style={{ textAlign: 'right' }}>
@@ -125,14 +126,14 @@ export function BookingsTab() {
                             </div>
                           </>
                         ) : (
-                          <span className="muted">—</span>
+                          <span className="muted">Not available</span>
                         )}
                       </td>
                       <td className="label-sm muted">{when(row.createdAt)}</td>
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
           )}
         </>

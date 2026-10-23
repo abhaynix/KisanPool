@@ -6,6 +6,10 @@
  * Mandis, Bookings, Alerts, AI and Reports had nowhere to live at all.
  */
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { Backdrop } from './components/backdrop';
+import { Button } from './components/ui/button';
+import { Card } from './components/ui/card';
+import { ThemeSwitcher } from './components/theme-switcher';
 import { api, clearToken, getToken, setToken } from './api';
 import { DashboardTab } from './tabs/Dashboard';
 import { LiveTab } from './tabs/Live';
@@ -47,15 +51,15 @@ interface Tab {
 // grouped the way a shift actually runs: watch, then the ledgers, then the desk
 const TABS: Tab[] = [
   { id: 'dashboard', label: 'Dashboard', icon: '▦', group: 'Operations', render: () => <DashboardTab /> },
-  { id: 'live', label: 'Live Operations', icon: '◉', group: 'Operations', render: () => <LiveTab /> },
+  { id: 'live', label: 'Live operations', icon: '◉', group: 'Operations', render: () => <LiveTab /> },
   { id: 'trips', label: 'Trips', icon: '⇄', group: 'Operations', render: () => <TripsTab /> },
   { id: 'bookings', label: 'Bookings', icon: '☑', group: 'Operations', render: () => <BookingsTab /> },
   { id: 'farmers', label: 'Farmers', icon: '⚘', group: 'Network', render: () => <FarmersTab /> },
   { id: 'transporters', label: 'Transporters', icon: '⛟', group: 'Network', render: () => <TransportersTab /> },
   { id: 'mandis', label: 'Mandis', icon: '⌂', group: 'Network', render: () => <MandisTab /> },
-  { id: 'billing', label: 'Payments & Billing', icon: '₹', group: 'Money', render: () => <BillingTab /> },
-  { id: 'alerts', label: 'Alerts & Issues', icon: '⚠', group: 'Oversight', render: () => <AlertsTab /> },
-  { id: 'ai', label: 'AI Assistant', icon: '◍', group: 'Oversight', render: () => <AiTab /> },
+  { id: 'billing', label: 'Payments & billing', icon: '₹', group: 'Money', render: () => <BillingTab /> },
+  { id: 'alerts', label: 'Alerts & issues', icon: '⚠', group: 'Oversight', render: () => <AlertsTab /> },
+  { id: 'ai', label: 'AI assistant', icon: '◍', group: 'Oversight', render: () => <AiTab /> },
   { id: 'reports', label: 'Reports', icon: '▤', group: 'Oversight', render: () => <ReportsTab /> },
   { id: 'resilience', label: 'Resilience', icon: '⛨', group: 'Oversight', render: () => <ResilienceTab /> },
   { id: 'settings', label: 'Settings', icon: '⚙', group: 'Oversight', render: () => <SettingsTab /> },
@@ -67,6 +71,7 @@ export function App() {
   const [signedIn, setSignedIn] = useState(Boolean(getToken()));
   const [tab, setTab] = useState<TabId>('dashboard');
   const [defaultCreds, setDefaultCreds] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   /** counts on the rail, so an operator sees where the trouble is without clicking */
   const [alertCount, setAlertCount] = useState(0);
 
@@ -90,6 +95,13 @@ export function App() {
     return () => clearInterval(timer);
   }, [signedIn, pollAlerts]);
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 0);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   if (!signedIn) {
     return (
       <Login
@@ -105,6 +117,7 @@ export function App() {
 
   return (
     <div className="shell">
+      <Backdrop className="chai-backdrop" />
       <aside className="sidebar">
         <div className="sidebar-brand">
           <div
@@ -112,8 +125,8 @@ export function App() {
               width: 34,
               height: 34,
               borderRadius: 'var(--r-md)',
-              background: 'var(--primary-container)',
-              color: 'var(--on-primary)',
+              background: 'var(--primary)',
+              color: 'var(--primary-foreground)',
               display: 'grid',
               placeItems: 'center',
               fontWeight: 700,
@@ -169,7 +182,7 @@ export function App() {
       </aside>
 
       <div className="canvas">
-        <header className="topbar">
+        <header className={`topbar ${scrolled ? 'scrolled' : ''}`}>
           <div>
             <div className="headline-md">{active.label}</div>
             <div className="label-sm muted">{active.group}</div>
@@ -177,6 +190,10 @@ export function App() {
           <div className="row">
             <span className="dot ok" />
             <span className="label-sm muted">API connected</span>
+            <div className="theme-toggle-wrap">
+              <span className="label-sm muted">Theme</span>
+              <ThemeSwitcher className="theme-toggle" />
+            </div>
           </div>
         </header>
 
@@ -185,16 +202,16 @@ export function App() {
             <div
               className="card"
               style={{
-                background: 'var(--tertiary-container)',
-                borderColor: 'var(--tertiary-container)',
-                borderRadius: 'var(--r-xl)',
+                background: 'transparent',
+                borderColor: 'var(--border)',
+                borderRadius: 'var(--radius)',
                 marginBottom: 'var(--s-md)',
               }}
             >
-              <strong style={{ color: 'var(--on-tertiary-container)' }}>
+              <strong style={{ color: 'var(--warning)' }}>
                 Default credentials are in use
               </strong>
-              <div className="body-md" style={{ color: 'var(--on-tertiary-container)' }}>
+              <div className="body-md" style={{ color: 'var(--warning)' }}>
                 Set <code>ADMIN_USERNAME</code> and <code>ADMIN_PASSWORD</code> in <code>.env</code>{' '}
                 before this server is reachable by anyone else.
               </div>
@@ -230,15 +247,22 @@ function Login({ onSignedIn }: { onSignedIn: (usingDefaults: boolean) => void })
   };
 
   return (
-    <div style={{ display: 'grid', placeItems: 'center', minHeight: '100vh', padding: 'var(--s-md)' }}>
-      <form className="card" style={{ width: '100%', maxWidth: 380 }} onSubmit={submit}>
-        <div className="headline-lg">KisanPool Admin</div>
+    <div className="auth-page">
+      <Backdrop className="chai-backdrop" />
+      <div className="auth-theme-toggle">
+        <span className="label-sm muted">Theme</span>
+        <ThemeSwitcher className="theme-toggle" />
+      </div>
+      <Card className="auth-card">
+        <form onSubmit={submit}>
+        <div className="headline-lg">KisanPool admin</div>
         <div className="body-md muted" style={{ marginBottom: 'var(--s-lg)' }}>
           Operator sign in
         </div>
 
-        <label className="label-lg muted">Username</label>
+        <label className="label-lg muted" htmlFor="admin-username">Username</label>
         <input
+          id="admin-username"
           className="input"
           style={{ margin: '4px 0 12px' }}
           value={username}
@@ -246,8 +270,9 @@ function Login({ onSignedIn }: { onSignedIn: (usingDefaults: boolean) => void })
           autoFocus
         />
 
-        <label className="label-lg muted">Password</label>
+        <label className="label-lg muted" htmlFor="admin-password">Password</label>
         <input
+          id="admin-password"
           className="input"
           style={{ margin: '4px 0 16px' }}
           type="password"
@@ -261,14 +286,15 @@ function Login({ onSignedIn }: { onSignedIn: (usingDefaults: boolean) => void })
           </div>
         ) : null}
 
-        <button className="btn" style={{ width: '100%' }} disabled={busy}>
+        <Button variant="solid" className="w-full" disabled={busy}>
           {busy ? 'Signing in…' : 'Sign in'}
-        </button>
+        </Button>
 
         <div className="label-sm muted" style={{ marginTop: 12, textAlign: 'center' }}>
-          Default login is admin / admin — change it in <code>.env</code>.
+          Default login is admin / admin. Change it in <code>.env</code>.
         </div>
-      </form>
+        </form>
+      </Card>
     </div>
   );
 }

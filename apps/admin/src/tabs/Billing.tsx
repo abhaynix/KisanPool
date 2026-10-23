@@ -1,3 +1,4 @@
+import { Table } from '../components/ui/table';
 import { useEffect, useState } from 'react';
 import { api, type Billing, type PricingAudit } from '../api';
 import { Badge, Empty, ErrorBox, Loading, Stat, kg, rupees, when } from '../ui';
@@ -112,7 +113,7 @@ export function BillingTab() {
             <Empty message="No settlements match that filter." />
           ) : (
             <div className="card table-wrap" style={{ padding: 0 }}>
-              <table>
+              <Table>
                 <thead>
                   <tr>
                     <th>Farmer</th>
@@ -137,7 +138,7 @@ export function BillingTab() {
                         <div className="label-sm muted">{kg(row.quantityKg)}</div>
                       </td>
                       <td className="label-sm muted">
-                        {row.trip?.to || '—'}
+                        {row.trip?.to || 'Not available'}
                         <div>
                           {row.trip ? <Badge value={row.trip.state} /> : null}
                         </div>
@@ -183,7 +184,7 @@ export function BillingTab() {
                         ) : row.payment?.status === 'PAID' ? (
                           <span className="badge warn">payout pending</span>
                         ) : (
-                          <span className="muted label-sm">—</span>
+                          <span className="muted label-sm">Not available</span>
                         )}
                       </td>
                       <td>
@@ -198,7 +199,7 @@ export function BillingTab() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
           )}
         </>
@@ -251,7 +252,7 @@ export function BillingTab() {
                   </div>
 
                   <div className="table-wrap" style={{ marginTop: 'var(--s-sm)' }}>
-                    <table>
+                    <Table>
                       <thead>
                         <tr>
                           <th>Farmer</th>
@@ -276,7 +277,7 @@ export function BillingTab() {
                             </td>
                             <td>
                               {allocation.delta == null ? (
-                                <span className="muted">—</span>
+                                <span className="muted">Not available</span>
                               ) : (
                                 <span
                                   className={`badge ${allocation.delta <= 0 ? 'good' : 'bad'}`}
@@ -288,7 +289,7 @@ export function BillingTab() {
                           </tr>
                         ))}
                       </tbody>
-                    </table>
+                    </Table>
                   </div>
                 </div>
               ))}

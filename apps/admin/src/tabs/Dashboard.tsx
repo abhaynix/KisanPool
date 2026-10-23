@@ -1,5 +1,5 @@
 /**
- * A1 · Operations dashboard — the platform at a glance.
+ * A1 · Operations dashboard: the platform at a glance.
  *
  * Every figure comes from /admin/stats and /admin/live. Nothing on this page is a
  * literal: if a number cannot be derived from the API it is not shown.
@@ -163,7 +163,7 @@ export function DashboardTab() {
         </div>
       </div>
 
-      {/* the funnel — where requests actually end up */}
+      {/* the funnel: where requests actually end up */}
       <Section title="Request funnel">
         <div className="kpi-grid">
           <Stat label="Total requests" value={String(s.requests.total)} />

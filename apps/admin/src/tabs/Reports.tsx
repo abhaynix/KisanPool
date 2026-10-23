@@ -1,5 +1,5 @@
 /**
- * Reports — the numbers a pitch or a weekly review needs, in one place.
+ * Reports: the numbers a pitch or a weekly review needs, in one place.
  *
  * Everything is computed from /admin/stats and /admin/billing. The CSV export is
  * built from the same rows the tables render, so a downloaded file can never
@@ -47,7 +47,7 @@ export function ReportsTab() {
   const s = stats.data;
   const settlements = billing.data?.settlements ?? [];
 
-  // pooling is the whole thesis — this is the number that proves or disproves it
+  // pooling is the whole thesis: this is the number that proves or disproves it
   const savingsPct =
     s.money.collected > 0
       ? Math.round((s.pooling.totalSaved / (s.money.collected + s.pooling.totalSaved)) * 100)

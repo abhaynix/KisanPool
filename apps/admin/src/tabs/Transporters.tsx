@@ -1,10 +1,11 @@
 /**
- * Transporters — the carrier side, with the fleet and the KYC queue alongside.
+ * Transporters: the carrier side, with the fleet and the KYC queue alongside.
  *
  * Vehicles and Verification are sub-views rather than top-level rail items: an
  * operator working a driver problem needs all three within one click, and the
  * rail stays at the twelve product areas.
  */
+import { Table } from '../components/ui/table';
 import { useState } from 'react';
 import { api } from '../api';
 import { VehiclesTab } from './Vehicles';
@@ -85,7 +86,7 @@ function People() {
           </div>
 
           <div className="card table-wrap">
-            <table>
+            <Table>
               <thead>
                 <tr>
                   <th>Name</th>
@@ -107,20 +108,20 @@ function People() {
                       {row.vehicle ? (
                         <Badge value={row.vehicle.verificationStatus} />
                       ) : (
-                        <span className="muted">—</span>
+                        <span className="muted">Not available</span>
                       )}
                     </td>
                     <td>
-                      {row.vehicle ? <Badge value={row.vehicle.status} /> : <span className="muted">—</span>}
+                      {row.vehicle ? <Badge value={row.vehicle.status} /> : <span className="muted">Not available</span>}
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      {row.ratingCount ? `${row.ratingAvg.toFixed(1)}★ (${row.ratingCount})` : '—'}
+                      {row.ratingCount ? `${row.ratingAvg.toFixed(1)}★ (${row.ratingCount})` : 'Not available'}
                     </td>
                     <td className="label-sm muted">{when(row.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
           </div>
         </>
       )}

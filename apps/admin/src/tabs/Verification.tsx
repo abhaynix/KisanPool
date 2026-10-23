@@ -1,9 +1,12 @@
+import { Table } from '../components/ui/table';
+import { ConfirmDialog } from '../components/ui/confirm-dialog';
+import { Input } from '../components/ui/input';
 import { useEffect, useState } from 'react';
 import { api, type KycGroup } from '../api';
 import { Badge, Empty, ErrorBox, Loading, kg, when } from '../ui';
 
 /**
- * Grouped by transporter, because RC and DL are approved together — that is what
+ * Grouped by transporter, because RC and DL are approved together: that is what
  * flips the vehicle to VERIFIED and lets it appear in matching at all (ADR-010).
  */
 export function VerificationTab() {
@@ -12,6 +15,8 @@ export function VerificationTab() {
   const [filter, setFilter] = useState('PENDING');
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<{ id: string; type: string; userName: string } | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const load = (): void => {
     setError(undefined);
@@ -21,26 +26,31 @@ export function VerificationTab() {
 
   useEffect(load, [filter]);
 
-  const review = async (id: string, status: 'VERIFIED' | 'REJECTED'): Promise<void> => {
-    const reason =
-      status === 'REJECTED' ? window.prompt('Why is this rejected? (shown to the driver)') : undefined;
-    if (status === 'REJECTED' && !reason) return;
-
+  const review = async (id: string, status: 'VERIFIED' | 'REJECTED', reason?: string): Promise<boolean> => {
     setBusy(id);
     setNote(null);
+    setError(undefined);
     try {
       const result = await api.reviewDocument(id, status, reason ?? undefined);
       setNote(
         result.vehicleVerification === 'VERIFIED'
-          ? 'Vehicle is now VERIFIED — it will start appearing in matching.'
+          ? 'Vehicle is now VERIFIED: it will start appearing in matching.'
           : `Saved. Vehicle is ${result.vehicleVerification ?? 'unchanged'}.`,
       );
       load();
+      return true;
     } catch (err) {
       setError(err);
+      return false;
     } finally {
       setBusy(null);
     }
+  };
+
+  const confirmReject = async (): Promise<void> => {
+    if (!rejectTarget || !rejectionReason.trim()) return;
+    const saved = await review(rejectTarget.id, 'REJECTED', rejectionReason.trim());
+    if (saved) setRejectTarget(null);
   };
 
   return (
@@ -60,9 +70,9 @@ export function VerificationTab() {
       {note ? (
         <div
           className="card"
-          style={{ background: 'var(--secondary-container)', borderColor: 'var(--secondary-container)' }}
+          style={{ background: 'transparent', borderColor: 'var(--border)' }}
         >
-          <span style={{ color: 'var(--on-secondary-container)' }}>{note}</span>
+          <span style={{ color: 'var(--success)' }}>{note}</span>
         </div>
       ) : null}
 
@@ -94,7 +104,7 @@ export function VerificationTab() {
             </div>
 
             <div className="table-wrap" style={{ marginTop: 'var(--s-md)' }}>
-              <table>
+              <Table>
                 <thead>
                   <tr>
                     <th>Document</th>
@@ -141,7 +151,10 @@ export function VerificationTab() {
                           <button
                             className="btn danger"
                             disabled={busy === doc._id || doc.status === 'REJECTED'}
-                            onClick={() => void review(doc._id, 'REJECTED')}
+                            onClick={() => {
+                              setRejectionReason('');
+                              setRejectTarget({ id: doc._id, type: doc.type, userName: group.user.name || 'this transporter' });
+                            }}
                           >
                             Reject
                           </button>
@@ -150,11 +163,43 @@ export function VerificationTab() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
           </div>
         ))
       )}
+      <ConfirmDialog
+        open={rejectTarget !== null}
+        title="Reject this document?"
+        confirmLabel="Reject document"
+        cancelLabel="Keep document pending"
+        typeToConfirm="REJECT"
+        canConfirm={rejectionReason.trim().length > 0}
+        busy={rejectTarget !== null && busy === rejectTarget.id}
+        error={error instanceof Error ? error.message : undefined}
+        onConfirm={() => void confirmReject()}
+        onCancel={() => setRejectTarget(null)}
+      >
+        {rejectTarget ? (
+          <div className="space-y-3">
+            <p>
+              This will mark the {rejectTarget.type} document as rejected for {rejectTarget.userName}.
+              The reason will be shown to the transporter. Rejecting an RC or DL document can also
+              move the vehicle to rejected and keep it out of matching.
+            </p>
+            <label className="block text-sm text-muted-foreground" htmlFor="rejection-reason">
+              Reason shown to the transporter
+            </label>
+            <Input
+              id="rejection-reason"
+              value={rejectionReason}
+              onChange={(event) => setRejectionReason(event.target.value)}
+              placeholder="Explain what needs to be corrected"
+              required
+            />
+          </div>
+        ) : null}
+      </ConfirmDialog>
     </div>
   );
 }

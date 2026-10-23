@@ -1,10 +1,11 @@
 /**
- * Trips — every pooled journey, active first.
+ * Trips: every pooled journey, active first.
  *
  * Reuses the live-operations feed because a trip's truth (capacity, pool size,
  * how long it has sat in one state) is derived there already. Adding a second
  * derivation would be a second chance to disagree with the app.
  */
+import { Table } from '../components/ui/table';
 import { useState } from 'react';
 import { api } from '../api';
 import {
@@ -74,7 +75,7 @@ export function TripsTab() {
             />
             <Stat
               label="Capacity committed"
-              value={totalCapacity ? `${Math.round((totalCommitted / totalCapacity) * 100)}%` : '—'}
+              value={totalCapacity ? `${Math.round((totalCommitted / totalCapacity) * 100)}%` : 'Not available'}
               hint={`${kg(totalCommitted)} of ${kg(totalCapacity)}`}
             />
           </div>
@@ -83,7 +84,7 @@ export function TripsTab() {
             <Empty
               message={
                 filter === 'stuck'
-                  ? 'Nothing is delayed — every active trip has moved recently.'
+                  ? 'Nothing is delayed: every active trip has moved recently.'
                   : 'No trips are running. A trip begins the moment a farmer confirms a transporter.'
               }
             />
@@ -101,7 +102,6 @@ export function TripsTab() {
                   <div
                     key={trip._id}
                     className="card"
-                    style={trip.stuck ? { borderColor: 'var(--error)' } : undefined}
                   >
                     <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
                       <div>
@@ -112,7 +112,7 @@ export function TripsTab() {
                         </div>
                         <div className="label-sm muted">
                           {trip.transporter?.name ?? 'Unassigned'} ·{' '}
-                          {trip.vehicle?.registrationNumber ?? '—'} ·{' '}
+                          {trip.vehicle?.registrationNumber ?? 'Not available'} ·{' '}
                           {trip.routeDistanceKm.toFixed(0)} km · {trip.minutesInState} min in this
                           state
                         </div>
@@ -157,7 +157,7 @@ export function TripsTab() {
 
                     {trip.shipments.length > 0 ? (
                       <div className="table-wrap" style={{ marginTop: 'var(--s-gutter)' }}>
-                        <table>
+                        <Table>
                           <thead>
                             <tr>
                               <th>#</th>
@@ -172,7 +172,7 @@ export function TripsTab() {
                             {trip.shipments.map((shipment) => (
                               <tr key={shipment._id}>
                                 <td>{shipment.pickupSequence + 1}</td>
-                                <td>{shipment.farmer?.name ?? '—'}</td>
+                                <td>{shipment.farmer?.name ?? 'Not available'}</td>
                                 <td>
                                   {shipment.cropType} · {kg(shipment.quantityKg)}
                                 </td>
@@ -186,7 +186,7 @@ export function TripsTab() {
                               </tr>
                             ))}
                           </tbody>
-                        </table>
+                        </Table>
                       </div>
                     ) : null}
                   </div>

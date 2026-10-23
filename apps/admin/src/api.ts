@@ -12,7 +12,7 @@ import type {
 import { ERROR_STRATEGY } from '@kisanpool/shared';
 
 /**
- * Same envelope and the same 25 error codes as the mobile apps (ADR-018) — the
+ * Same envelope and the same 25 error codes as the mobile apps (ADR-018): the
  * console does not get its own error vocabulary.
  */
 export class AdminError extends Error {
@@ -29,7 +29,7 @@ const TOKEN_KEY = 'kp.admin.token';
 
 /**
  * Empty by default so requests are same-origin and vite.config.ts's `/admin`
- * proxy handles them — no API host baked into the bundle. Set VITE_API_URL only
+ * proxy handles them: no API host baked into the bundle. Set VITE_API_URL only
  * when the console is served from somewhere the API is not.
  */
 const base_url = import.meta.env.VITE_API_URL ?? '';
@@ -85,7 +85,7 @@ export interface Stats {
     byState: Record<string, number>;
     active: number;
     completed: number;
-    /** farmers per trip — the one number that says whether pooling is happening */
+    /** farmers per trip: the one number that says whether pooling is happening */
     avgPoolSize: number;
     tonnesMoved: number;
   };
@@ -343,7 +343,7 @@ export interface AdminRequestRow {
   createdAt: string;
   minutesOpen: number;
   farmer: { _id: string; name: string; phone: string } | null;
-  /** transporters who ACCEPTED — reserves nothing */
+  /** transporters who ACCEPTED: reserves nothing */
   offerCount: number;
   totalOffers: number;
   /** present only once the farmer CONFIRMED one of them */
@@ -475,7 +475,7 @@ export const api = {
   resetRecovery: () =>
     request<{ state: string }>('/admin/resilience/reset', { method: 'POST' }),
 
-  /** Switch Redis OFF at runtime — failure-matrix CASE 3. Reversible. */
+  /** Switch Redis OFF at runtime: failure-matrix CASE 3. Reversible. */
   disableRedis: () =>
     request<{ redis: { state: string; detail: string }; journal: ResilienceStatusDTO['journal'] }>(
       '/admin/resilience/redis/disable',
