@@ -152,6 +152,78 @@ export interface MachineSearchResult extends FarmMachineDTO {
   quote: MachineQuoteDTO | null;
 }
 
+export interface FreshRecommendationInput {
+  cropKey: string;
+  quantityKg: number;
+  harvestedAt: string;
+  ripenessStage: 'GREEN' | 'TURNING' | 'PINK' | 'RED' | 'UNKNOWN';
+  storageCondition: 'SHADE' | 'AMBIENT' | 'COOL_STORAGE' | 'UNKNOWN';
+  storageTemperatureC?: number;
+  handlingCondition: 'GOOD' | 'BRUISED' | 'ROUGH_HANDLING' | 'UNKNOWN';
+  pickup: GeoPoint;
+  earliestPickupAt: string;
+  desiredArrivalBy?: string;
+  searchRadiusKm?: number;
+}
+
+export interface FreshRecommendationSnapshot {
+  _id: string;
+  farmerId: string;
+  input: FreshRecommendationInput;
+  generatedAt: string;
+  expiresAt: string;
+  cropProfileVersion: string;
+  freshnessModelVersion: string;
+  pricePolicyVersion: string;
+  rankingPolicyVersion: string;
+  options: Array<{
+    marketId: string;
+    marketName: string;
+    marketLocation: { lat: number; lng: number };
+    marketReferenceSource: string;
+    marketAcceptance: 'UNKNOWN' | boolean;
+    distanceFromPickupKm: number;
+    route: {
+      distanceKm: number;
+      durationMinutes: number;
+      endToEndDurationMinutes: number;
+      estimateSource: string;
+      estimatedArrivalAt: string | null;
+    } | null;
+    arrivalAt: string;
+    transport: {
+      available: boolean;
+      farmerPayableINR?: number;
+      soloPriceINR?: number;
+      routeDistanceKm?: number;
+      vehicleToPickupEtaMinutes?: number;
+      reason?: string;
+    };
+    price: null | { sourceType: string; status: string; modalINRPerKg: number };
+    freshness: {
+      status: 'ESTIMATED' | 'INSUFFICIENT_DATA';
+      score: number | null;
+      band: string | null;
+      modelVersion: string | null;
+      missingInputs: string[];
+      warnings: string[];
+      estimatedLatestArrivalAt: null;
+    };
+    expectedSaleableKg: number | null;
+    unknownCostItems: string[];
+    warnings: string[];
+  }>;
+  recommendations: {
+    bestBalanced: unknown | null;
+    highestNetProceeds: unknown | null;
+    fastestFeasible: unknown | null;
+    closestSuitable: unknown | null;
+  };
+  warnings: string[];
+  missingData: string[];
+  status: 'READY' | 'NO_FEASIBLE_MARKET';
+}
+
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   body?: unknown;
@@ -308,6 +380,27 @@ export const api = {
     preferredDate: string;
     notes?: string;
   }) => request<TransportRequestDTO>('/transport/requests', { method: 'POST', body: input }),
+
+  // ---------- Fresh recommendation snapshots ----------
+
+  freshCrops: () =>
+    request<Array<{
+      cropKey: string;
+      displayName: string;
+      aliases: string[];
+      ripenessStages: string[];
+      storageConditions: string[];
+      handlingConditions: string[];
+      shelfWindowSupported: boolean;
+      profileVersion: string;
+      freshnessModelVersion: string;
+    }>>('/fresh/crops'),
+
+  createFreshRecommendation: (input: FreshRecommendationInput) =>
+    request<FreshRecommendationSnapshot>('/fresh/recommendations', { method: 'POST', body: input }),
+
+  getFreshRecommendation: (id: string) =>
+    request<FreshRecommendationSnapshot>(`/fresh/recommendations/${encodeURIComponent(id)}`),
 
   /** The farmer's requests, each with how many transporters have claimed it. */
   myRequests: () =>

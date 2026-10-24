@@ -124,6 +124,13 @@ export default function FarmerHome() {
               onPress={() => router.push('/(farmer)/requests/new')}
               style={{ marginTop: space.md }}
             />
+            <Button
+              label="Find a fresh produce market"
+              icon="storefront"
+              variant="secondary"
+              onPress={() => router.push('/(farmer)/fresh')}
+              style={{ marginTop: space.sm }}
+            />
           </Card>
         </View>
 

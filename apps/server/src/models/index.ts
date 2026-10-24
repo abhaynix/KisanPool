@@ -21,6 +21,7 @@ export { TripShipment } from './TripShipment';
 export { TransporterOffer } from './TransporterOffer';
 export { PricingEvent } from './PricingEvent';
 export { MarketPriceObservation } from './MarketPriceObservation';
+export { FreshRecommendation } from './FreshRecommendation';
 export { WebhookEvent } from './WebhookEvent';
 
 // V2 — Farm Resource Network
@@ -44,6 +45,7 @@ export type { TripShipmentDoc } from './TripShipment';
 export type { TransporterOfferDoc } from './TransporterOffer';
 export type { PricingEventDoc } from './PricingEvent';
 export type { MarketPriceObservationDoc } from './MarketPriceObservation';
+export type { FreshRecommendationDoc } from './FreshRecommendation';
 export type { WebhookEventDoc } from './WebhookEvent';
 
 export type { FarmMachineDoc } from './FarmMachine';
