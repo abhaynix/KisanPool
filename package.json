@@ -22,7 +22,6 @@
     "node": ">=20"
   },
   "overrides": {
-    "react": "19.3.0",
     "expo-font": "58.0.10"
   }
 }

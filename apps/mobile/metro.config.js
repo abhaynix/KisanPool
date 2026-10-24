@@ -11,10 +11,9 @@ config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(workspaceRoot, 'node_modules'),
 ];
-config.resolver.disableHierarchicalLookup = true;
 // npm workspaces can leave a newer peer copy hoisted at the repository root.
 // Pin these imports to the app's SDK-compatible copies so every bundle uses one
-// React dispatcher and Expo SDK 54's expo-font implementation.
+// React dispatcher and Expo SDK 58's expo-font implementation.
 config.resolver.extraNodeModules = {
   ...config.resolver.extraNodeModules,
   react: path.resolve(projectRoot, 'node_modules/react'),

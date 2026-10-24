@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "scheme": "kisanpool",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#0a0a0a"
-    },
     "ios": {
       "supportsTablet": false,
       "deploymentTarget": "15.1",
@@ -23,7 +18,9 @@
     },
     "android": {
       "package": "com.kisanpool.app",
-      "adaptiveIcon": { "backgroundColor": "#0a0a0a" },
+      "adaptiveIcon": {
+        "backgroundColor": "#0a0a0a"
+      },
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
@@ -31,16 +28,28 @@
         "CAMERA"
       ],
       "config": {
-        "googleMaps": { "apiKey": "" }
+        "googleMaps": {
+          "apiKey": ""
+        }
       }
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-av",
+      "expo-audio",
       "expo-location",
-      "./plugins/with-ios-scene-lifecycle"
+      "expo-notifications",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0a0a0a"
+        }
+      ],
+      "./plugins/with-ios-scene-lifecycle",
+      "expo-status-bar"
     ],
-    "experiments": { "typedRoutes": false }
+    "experiments": {
+      "typedRoutes": false
+    }
   }
 }

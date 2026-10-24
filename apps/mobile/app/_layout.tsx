@@ -38,7 +38,6 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <StatusBar
         style={colors.background === '#0a0a0a' ? 'light' : 'dark'}
-        backgroundColor={colors.background}
       />
 
       <Stack

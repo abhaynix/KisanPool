@@ -7,10 +7,17 @@
  * farmer in a noisy field can read what they are agreeing to, and the flow always
  * stops at the checkout handoff , it never pays (ADR-014).
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
+import {
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  useAudioPlayer,
+  useAudioPlayerStatus,
+  useAudioRecorder,
+} from 'expo-audio';
 import { useRouter } from 'expo-router';
 import type { AiChatResponse, Language } from '@kisanpool/shared';
 import { api } from '../lib/api';
@@ -39,24 +46,28 @@ export function VoiceAssistantButton({ language = 'en' }: { language?: Language 
   const [reply, setReply] = useState('');
   const [pending, setPending] = useState<AiChatResponse['pendingConfirmation']>();
 
-  const recording = useRef<Audio.Recording | null>(null);
-  const sound = useRef<Audio.Sound | null>(null);
+  const recording = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const [audioSource, setAudioSource] = useState<string | null>(null);
+  const player = useAudioPlayer(audioSource);
+  const playerStatus = useAudioPlayerStatus(player);
   const sessionId = useRef(`voice_${Date.now()}`);
+
+  useEffect(() => {
+    if (audioSource && playerStatus.isLoaded) player.play();
+  }, [audioSource, player, playerStatus.isLoaded]);
 
   const startRecording = async (): Promise<void> => {
     try {
-      const permission = await Audio.requestPermissionsAsync();
+      const permission = await requestRecordingPermissionsAsync();
       if (!permission.granted) {
         setState('error');
         setReply('I need microphone permission to listen.');
         return;
       }
 
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-      const { recording: rec } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY,
-      );
-      recording.current = rec;
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await recording.prepareToRecordAsync();
+      recording.record();
       setState('listening');
       setTranscript('');
       setReply('');
@@ -68,13 +79,11 @@ export function VoiceAssistantButton({ language = 'en' }: { language?: Language 
 
   const stopAndSend = async (): Promise<void> => {
     try {
-      const rec = recording.current;
-      if (!rec) return;
+      if (!recording.isRecording) return;
 
       setState('transcribing');
-      await rec.stopAndUnloadAsync();
-      const uri = rec.getURI();
-      recording.current = null;
+      await recording.stop();
+      const uri = recording.uri;
       if (!uri) throw new Error('no audio');
 
       const stt = await api.stt({ uri, name: 'speech.m4a', type: 'audio/m4a' });
@@ -103,11 +112,7 @@ export function VoiceAssistantButton({ language = 'en' }: { language?: Language 
     try {
       setState('speaking');
       const { audio } = await api.tts(answer.reply, answer.language);
-      const { sound: playback } = await Audio.Sound.createAsync({
-        uri: `data:audio/wav;base64,${audio}`,
-      });
-      sound.current = playback;
-      await playback.playAsync();
+      setAudioSource(`data:audio/wav;base64,${audio}`);
     } catch {
       // silent , the reply is displayed
     }
@@ -132,9 +137,9 @@ export function VoiceAssistantButton({ language = 'en' }: { language?: Language 
   };
 
   const close = (): void => {
-    void recording.current?.stopAndUnloadAsync().catch(() => undefined);
-    void sound.current?.unloadAsync().catch(() => undefined);
-    recording.current = null;
+    if (recording.isRecording) void recording.stop().catch(() => undefined);
+    player.pause();
+    setAudioSource(null);
     setOpen(false);
     setState('idle');
     setTranscript('');
