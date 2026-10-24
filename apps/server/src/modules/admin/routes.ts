@@ -26,6 +26,10 @@ import {
   AiSession,
   Trip,
   TripShipment,
+  MarketPriceObservation,
+  RecoveryIncident,
+  CargoLedger,
+  FreshRecommendation,
   User,
   Vehicle,
 } from '../../models';
@@ -210,6 +214,41 @@ adminRouter.get(
     });
   }),
 );
+
+// One read-only queue for Fresh data quality and cargo/recovery work that needs
+// an operator. Each record keeps its real source status; this route does not
+// infer market validity or silently resolve custody differences.
+adminRouter.get('/fresh-ops', requireAdmin, asyncHandler(async (_req, res) => {
+  const [prices, incidents, ledgers, recommendations] = await Promise.all([
+    MarketPriceObservation.find({ dataStatus: { $in: ['STALE', 'EXPIRED', 'INVALID'] } })
+      .populate('marketId', 'name').sort({ fetchedAt: -1 }).limit(100).lean(),
+    RecoveryIncident.find({ status: { $nin: ['CLOSED', 'RECOVERED'] } })
+      .populate('tripId', 'state').sort({ updatedAt: -1 }).limit(100).lean(),
+    CargoLedger.find({ $or: [
+      { dispatchReceiptVarianceKg: { $ne: 0 } },
+      { remainingAvailableKg: { $gt: 0 } },
+      { 'plans.status': { $in: ['PROPOSED', 'BOOKING_REQUESTED'] } },
+    ] }).sort({ updatedAt: -1 }).limit(200).lean(),
+    FreshRecommendation.find({ status: 'NO_FEASIBLE_MARKET' }).sort({ generatedAt: -1 }).limit(100).lean(),
+  ]);
+  const failedImportTracking = { configured: false, failedCount: null as number | null, note: 'No market-price import job or failure log is configured in this deployment.' };
+  ok(res, {
+    generatedAt: new Date(),
+    marketPrices: { staleOrInvalid: prices },
+    failedImports: failedImportTracking,
+    recovery: {
+      openIncidents: incidents,
+      noReplacement: incidents.filter((incident: any) => incident.status === 'NO_REPLACEMENT_AVAILABLE'),
+      custodyDiscrepancies: incidents.filter((incident: any) => ['HANDOVER_IN_PROGRESS', 'ESCALATED_TO_OPERATIONS'].includes(incident.status) || incident.custodyAcks?.some((ack: any) => ack.mismatch === true)),
+    },
+    cargo: {
+      receiptDiscrepancies: ledgers.filter((ledger: any) => ledger.dispatchReceiptVarianceKg !== 0),
+      unsoldCargo: ledgers.filter((ledger: any) => ledger.remainingAvailableKg > 0),
+      pendingConsentOrReroute: ledgers.flatMap((ledger: any) => ledger.plans.filter((plan: any) => ['PROPOSED', 'BOOKING_REQUESTED'].includes(plan.status)).map((plan: any) => ({ shipmentId: ledger.shipmentId, farmerId: ledger.farmerId, currentLocation: ledger.currentLocation, quantityKg: ledger.remainingAvailableKg, version: plan.version, option: plan.option, status: plan.status, farmerApproval: plan.farmerApproval, transporterApproval: plan.transporterApproval }))),
+    },
+    noFeasibleFreshRecommendations: recommendations.map((item: any) => ({ _id: item._id, generatedAt: item.generatedAt, warnings: item.warnings, missingData: item.missingData })),
+  });
+}));
 
 // ---------- 2. user data ----------
 

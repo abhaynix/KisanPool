@@ -17,6 +17,10 @@ const tripShipmentSchema = new Schema(
       required: true,
       unique: true, // one request can only ever ride once
     },
+    /** A reroute child shipment remains linked to the original cargo quantity ledger. */
+    cargoParentShipmentId: { type: Schema.Types.ObjectId, ref: 'TripShipment', default: undefined, index: true },
+    cargoPlanId: { type: Schema.Types.ObjectId, ref: 'CargoLedger', default: undefined },
+    cargoPlanVersion: { type: Number, default: undefined },
     farmerId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
 
     quantityKg: { type: Number, required: true },

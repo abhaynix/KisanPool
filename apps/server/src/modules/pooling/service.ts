@@ -12,6 +12,7 @@ import { haversineKm, money } from '../../lib/geo';
 import { getDirections } from '../maps/service';
 import {
   TransporterOffer,
+  CargoLedger,
   RecoveryIncident,
   TransportRequest,
   Trip,
@@ -32,6 +33,7 @@ import {
 } from './pricing';
 import { markCommitted, operationKey, recordIntent } from '../resilience/journal';
 import { putTripSnapshot } from '../resilience/snapshots';
+import { recordLinkedCargoTransition } from '../cargo/linked-leg';
 
 /** How far a transporter will reasonably divert to collect a load. */
 const MAX_PICKUP_RADIUS_KM = 60;
@@ -681,6 +683,17 @@ export async function selectTransporter(requestId: string, offerId: string, farm
       throw new ApiError('MATCH_EXPIRED', 'That transporter is no longer available.');
     }
 
+    if (request.cargoPlanId && request.cargoPlanVersion != null) {
+      const cargoLedger = await CargoLedger.findById(request.cargoPlanId).session(session ?? null);
+      const approvedPlan = cargoLedger?.plans.find((row) => row.version === request.cargoPlanVersion);
+      if (!approvedPlan || approvedPlan.status !== 'BOOKING_REQUESTED' || String(approvedPlan.transporterId) !== String(offer.transporterId) || String(approvedPlan.vehicleId) !== String(offer.vehicleId)) {
+        throw new ApiError('BOOKING_STATE_INVALID', 'This linked reroute is limited to the transporter and vehicle the farmer approved.');
+      }
+      if (Math.abs(offer.quotedPrice - approvedPlan.quoteINR) > Math.max(50, approvedPlan.quoteINR * 0.03)) {
+        throw new ApiError('BOOKING_STATE_INVALID', 'The reroute quote changed materially after approval; collect fresh consent.');
+      }
+    }
+
     const vehicle = await Vehicle.findById(offer.vehicleId).session(session ?? null);
     if (!vehicle) throw new ApiError('RESOURCE_NOT_FOUND', 'That vehicle no longer exists.');
 
@@ -810,6 +823,9 @@ export async function selectTransporter(requestId: string, offerId: string, farm
         {
           tripId: trip._id,
           requestId: request._id,
+          cargoParentShipmentId: request.cargoParentShipmentId,
+          cargoPlanId: request.cargoPlanId,
+          cargoPlanVersion: request.cargoPlanVersion,
           farmerId: request.farmerId,
           quantityKg: request.quantityKg,
           cropType: request.cropType,
@@ -939,9 +955,19 @@ export async function advanceShipment(
     shipment.pickedUpAt = new Date();
   }
   if (to === 'DELIVERED') {
+    if (!shipment.cargoParentShipmentId) {
+      const cargoLedger = await CargoLedger.findOne({ shipmentId: shipment._id });
+      if (cargoLedger && (cargoLedger.remainingAvailableKg > 0 || cargoLedger.inTransitKg > 0)) {
+        throw new ApiError('BOOKING_STATE_INVALID', 'This parent shipment remains open until every cargo quantity has a final disposition.');
+      }
+    }
     shipment.deliveredAt = new Date();
     // the bill freezes here — later joiners must not change what this farmer owes
     shipment.finalPrice = shipment.allocatedPrice;
+  }
+
+  if (to === 'PICKED_UP' || to === 'DELIVERED') {
+    await recordLinkedCargoTransition({ shipment, state: to, actorId, tripId: trip._id });
   }
 
   /*

@@ -22,6 +22,7 @@ export interface CreateRequestInput {
   freshSelection?: { recommendationId: string; optionId: string };
   /** recovery-only: preserve the original identity across a replay */
   id?: string;
+  cargoLink?: { parentShipmentId: string; cargoPlanId: string; cargoPlanVersion: number };
 }
 
 /** How long a request waits for a claim before it stops being shown. */
@@ -35,6 +36,9 @@ export async function createRequest(farmerId: string, input: CreateRequestInput)
     farmerId,
     freshRecommendationId: freshSelection?.recommendationId,
     freshOptionId: freshSelection?.optionId,
+    cargoParentShipmentId: input.cargoLink?.parentShipmentId,
+    cargoPlanId: input.cargoLink?.cargoPlanId,
+    cargoPlanVersion: input.cargoLink?.cargoPlanVersion,
     state: 'OPEN',
     expiresAt: new Date(Date.now() + POOL_TTL_HOURS * 3600_000),
   });
@@ -53,6 +57,7 @@ export async function createRequest(farmerId: string, input: CreateRequestInput)
       notes: input.notes ?? null,
       freshRecommendationId: freshSelection?.recommendationId ?? null,
       freshOptionId: freshSelection?.optionId ?? null,
+      cargoLink: input.cargoLink ?? null,
     },
   });
   await request.save();

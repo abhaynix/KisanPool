@@ -62,6 +62,10 @@ export const config = {
   // Policy values are config, never literals in the payment code (ADR-013).
   cancellationFeePct: num(process.env.PLATFORM_CANCELLATION_FEE_PCT, 5),
   platformFeePct: num(process.env.PLATFORM_FEE_PCT, 10),
+  cargo: {
+    maxRerouteAttempts: Math.max(1, Math.floor(num(process.env.CARGO_MAX_REROUTE_ATTEMPTS, 2))),
+    minRerouteBenefitINR: Math.max(0, num(process.env.CARGO_MIN_REROUTE_BENEFIT_INR, 0)),
+  },
 
   cloudinaryUrl: process.env.CLOUDINARY_URL ?? '',
 

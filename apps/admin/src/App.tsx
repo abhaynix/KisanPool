@@ -24,6 +24,7 @@ import { AiTab } from './tabs/Ai';
 import { ReportsTab } from './tabs/Reports';
 import { SettingsTab } from './tabs/Settings';
 import { ResilienceTab } from './tabs/Resilience';
+import { FreshOpsTab } from './tabs/FreshOps';
 
 type TabId =
   | 'dashboard'
@@ -38,6 +39,7 @@ type TabId =
   | 'ai'
   | 'reports'
   | 'resilience'
+  | 'freshOps'
   | 'settings';
 
 interface Tab {
@@ -62,6 +64,7 @@ const TABS: Tab[] = [
   { id: 'ai', label: 'AI assistant', icon: '◍', group: 'Oversight', render: () => <AiTab /> },
   { id: 'reports', label: 'Reports', icon: '▤', group: 'Oversight', render: () => <ReportsTab /> },
   { id: 'resilience', label: 'Resilience', icon: '⛨', group: 'Oversight', render: () => <ResilienceTab /> },
+  { id: 'freshOps', label: 'Fresh & cargo data quality', icon: '◌', group: 'Oversight', render: () => <FreshOpsTab /> },
   { id: 'settings', label: 'Settings', icon: '⚙', group: 'Oversight', render: () => <SettingsTab /> },
 ];
 

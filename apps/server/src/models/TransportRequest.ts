@@ -19,6 +19,10 @@ const transportRequestSchema = new Schema(
     /** Fresh recommendation audit link; the ordinary transport lifecycle remains authoritative. */
     freshRecommendationId: { type: Schema.Types.ObjectId, ref: 'FreshRecommendation', default: undefined },
     freshOptionId: { type: String, default: undefined },
+    /** Continuation request for the unsold balance of an existing cargo shipment. */
+    cargoParentShipmentId: { type: Schema.Types.ObjectId, ref: 'TripShipment', default: undefined, index: true },
+    cargoPlanId: { type: Schema.Types.ObjectId, ref: 'CargoLedger', default: undefined },
+    cargoPlanVersion: { type: Number, default: undefined },
 
     /**
      * The REQUEST's own lifecycle and nothing else. Once a transporter is chosen,
@@ -42,6 +46,10 @@ const transportRequestSchema = new Schema(
 transportRequestSchema.index(
   { freshRecommendationId: 1 },
   { unique: true, partialFilterExpression: { freshRecommendationId: { $exists: true } } },
+);
+transportRequestSchema.index(
+  { cargoPlanId: 1, cargoPlanVersion: 1 },
+  { unique: true, partialFilterExpression: { cargoPlanId: { $exists: true } } },
 );
 
 export type TransportRequestAttrs = InferSchemaType<typeof transportRequestSchema>;

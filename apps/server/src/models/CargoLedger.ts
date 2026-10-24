@@ -1,0 +1,102 @@
+import { Schema, model, type HydratedDocument, type InferSchemaType } from 'mongoose';
+
+const point = new Schema({ name: { type: String, default: '' }, lat: { type: Number, required: true }, lng: { type: Number, required: true } }, { _id: false });
+const eventSchema = new Schema({
+  type: { type: String, enum: ['RECEIVED', 'SALE', 'REJECTED', 'RETURNED', 'FINAL_DELIVERY', 'REROUTE_DISPATCHED', 'REROUTE_RECEIVED', 'VARIANCE'], required: true },
+  idempotencyKey: { type: String, required: true },
+  quantityKg: { type: Number, required: true, min: 0 },
+  at: { type: Date, required: true },
+  actorId: { type: String, required: true },
+  source: { type: String, enum: ['FARMER_REPORTED', 'TRANSPORTER_REPORTED', 'OPERATIONS_VERIFIED'], required: true },
+  location: { type: point, required: true },
+  condition: { type: String, default: '' },
+  evidenceUrls: { type: [String], default: [] },
+  buyerOfferId: { type: Schema.Types.ObjectId, ref: 'FreshBuyerOffer', default: undefined },
+  decisionPlanVersion: { type: Number, default: undefined },
+  priceINRPerKg: { type: Number, min: 0, default: undefined },
+  note: { type: String, default: '' },
+}, { _id: true });
+
+const planSchema = new Schema({
+  version: { type: Number, required: true },
+  idempotencyKey: { type: String, required: true },
+  option: { type: String, enum: ['SELL_HERE', 'REROUTE_TO_MARKET', 'HOLD_OR_ESCALATE'], required: true },
+  status: { type: String, enum: ['PROPOSED', 'DECLINED', 'EXPIRED', 'BOOKING_REQUESTED', 'DISPATCHED', 'RECEIVED', 'ESCALATED'], required: true },
+  marketId: { type: String, default: '' },
+  marketName: { type: String, default: '' },
+  marketLocation: { type: point, default: undefined },
+  quantityKg: { type: Number, required: true },
+  quoteINR: { type: Number, default: 0 },
+  vehicleId: { type: Schema.Types.ObjectId, ref: 'Vehicle', default: undefined },
+  transporterId: { type: Schema.Types.ObjectId, ref: 'User', default: undefined },
+  targetPriceINRPerKg: { type: Number, min: 0, default: undefined },
+  targetPriceSource: { type: String, enum: ['CONFIRMED_BUYER', 'INDICATIVE', 'OPERATOR_ESTIMATE', 'SIMULATED'], default: undefined },
+  incrementalAdvantageINR: { type: Number, default: null },
+  cropAcceptanceStatus: { type: String, enum: ['UNKNOWN', 'OPERATIONS_VERIFIED'], default: 'UNKNOWN' },
+  marketAcceptance: { type: String, enum: ['UNKNOWN', 'FARMER_REPORTED_UNVERIFIED', 'OPERATIONS_VERIFIED'], default: 'UNKNOWN' },
+  receivingHoursStatus: { type: String, enum: ['UNKNOWN', 'OPERATIONS_VERIFIED'], default: 'UNKNOWN' },
+  marketEvidenceUrl: { type: String, default: undefined },
+  marketVerificationNote: { type: String, default: '' },
+  verifiedBy: { type: String, default: undefined },
+  verifiedAt: { type: Date, default: undefined },
+  cancelledBy: { type: String, default: undefined },
+  cancelReason: { type: String, default: '' },
+  buyerOfferId: { type: Schema.Types.ObjectId, ref: 'FreshBuyerOffer', default: undefined },
+  farmerApproval: { actorId: Schema.Types.ObjectId, option: String, version: Number, at: Date },
+  transporterApproval: { actorId: Schema.Types.ObjectId, option: String, version: Number, accepted: Boolean, reason: String, at: Date },
+  quoteExpiresAt: { type: Date, default: undefined },
+  decisionAt: { type: Date, default: undefined },
+  requestId: { type: Schema.Types.ObjectId, ref: 'TransportRequest', default: undefined },
+}, { _id: true });
+
+const marketRecordSchema = new Schema({
+  marketId: { type: String, required: true },
+  marketName: { type: String, required: true },
+  acceptedCrop: { type: Boolean, default: false },
+  receivingHoursVerified: { type: Boolean, default: false },
+  targetPriceINRPerKg: { type: Number, min: 0, default: undefined },
+  targetPriceSource: { type: String, enum: ['CONFIRMED_BUYER', 'INDICATIVE', 'OPERATOR_ESTIMATE', 'SIMULATED'], default: undefined },
+  targetHandlingCostsINR: { type: Number, min: 0, default: undefined },
+  currentSellPriceINRPerKg: { type: Number, min: 0, default: undefined },
+  currentHandlingCostsINR: { type: Number, min: 0, default: undefined },
+  evidenceUrl: { type: String, required: true },
+  note: { type: String, required: true },
+  verifiedBy: { type: String, required: true },
+  verifiedAt: { type: Date, required: true },
+}, { _id: false });
+
+const cargoLedgerSchema = new Schema({
+  shipmentId: { type: Schema.Types.ObjectId, ref: 'TripShipment', required: true, unique: true, index: true },
+  farmerId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  tripId: { type: Schema.Types.ObjectId, ref: 'Trip', required: true, index: true },
+  requestId: { type: Schema.Types.ObjectId, ref: 'TransportRequest', required: true },
+  cropType: { type: String, required: true },
+  harvestedAt: { type: Date, default: undefined },
+  currentRipenessStage: { type: String, enum: ['GREEN', 'TURNING', 'PINK', 'RED', 'UNKNOWN'], default: 'UNKNOWN' },
+  currentStorageCondition: { type: String, enum: ['SHADE', 'AMBIENT', 'COOL_STORAGE', 'UNKNOWN'], default: 'UNKNOWN' },
+  currentStorageTemperatureC: { type: Number, default: undefined },
+  currentHandlingCondition: { type: String, enum: ['GOOD', 'BRUISED', 'ROUGH_HANDLING', 'UNKNOWN'], default: 'UNKNOWN' },
+  initialDispatchedKg: { type: Number, required: true, min: 0 },
+  receivedKg: { type: Number, default: 0 },
+  soldKg: { type: Number, default: 0 },
+  rejectedKg: { type: Number, default: 0 },
+  returnedKg: { type: Number, default: 0 },
+  deliveredKg: { type: Number, default: 0 },
+  inTransitKg: { type: Number, default: 0 },
+  remainingAvailableKg: { type: Number, default: 0 },
+  documentedVarianceKg: { type: Number, default: 0 },
+  dispatchReceiptVarianceKg: { type: Number, default: 0 },
+  dispatchReceiptVarianceResolvedAt: { type: Date, default: undefined },
+  dispatchReceiptVarianceResolvedBy: { type: String, default: undefined },
+  dispatchReceiptVarianceExplanation: { type: String, default: '' },
+  currentLocation: { type: point, required: true },
+  events: { type: [eventSchema], default: [] },
+  plans: { type: [planSchema], default: [] },
+  marketRecords: { type: [marketRecordSchema], default: [] },
+  revision: { type: Number, default: 0 },
+}, { timestamps: true, optimisticConcurrency: true });
+
+cargoLedgerSchema.index({ shipmentId: 1, 'events.idempotencyKey': 1 });
+cargoLedgerSchema.index({ farmerId: 1, updatedAt: -1 });
+export type CargoLedgerDoc = HydratedDocument<InferSchemaType<typeof cargoLedgerSchema>>;
+export const CargoLedger = model('CargoLedger', cargoLedgerSchema);

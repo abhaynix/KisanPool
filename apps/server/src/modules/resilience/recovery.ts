@@ -185,6 +185,7 @@ const appliers: Record<JournalEventType, (event: JournalEvent) => Promise<boolea
       id: event.entityId, cropType: p.cropType, quantityKg: p.quantityKg,
       pickup: p.pickup as never, destination: p.destination as never,
       preferredDate: new Date(p.preferredDate), notes: typeof p.notes === 'string' ? p.notes : undefined,
+      cargoLink: p.cargoLink && typeof p.cargoLink === 'object' ? p.cargoLink as { parentShipmentId: string; cargoPlanId: string; cargoPlanVersion: number } : undefined,
     });
     return true;
   },

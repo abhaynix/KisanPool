@@ -404,6 +404,15 @@ export const api = {
 
   stats: () => request<Stats>('/admin/stats'),
 
+  freshOps: () => request<{
+    generatedAt: string;
+    marketPrices: { staleOrInvalid: Array<any> };
+    failedImports: { configured: boolean; failedCount: number | null; note: string };
+    recovery: { openIncidents: Array<any>; noReplacement: Array<any>; custodyDiscrepancies: Array<any> };
+    cargo: { receiptDiscrepancies: Array<any>; unsoldCargo: Array<any>; pendingConsentOrReroute: Array<any> };
+    noFeasibleFreshRecommendations: Array<any>;
+  }>('/admin/fresh-ops'),
+
   users: (query: { q?: string; role?: string }) => {
     const params = new URLSearchParams();
     if (query.q) params.set('q', query.q);

@@ -95,6 +95,25 @@ Every response — success or failure — uses one shape:
 
 Recovery keeps the original `Trip`, shipments, prices and payments intact. Completed-leg compensation uses the existing route-cost/commission functions; farmer charge adjustments remain zero unless a separate approved workflow exists. Per-leg amounts remain on hold because the current one-payment/one-transporter payout contract cannot safely pay two drivers for one shipment. No replacement flow creates an extra payment or transfer.
 
+### Cargo partial sale and rerouting (`modules/cargo`)
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| POST | `/cargo/shipments/:id/receive` | `{ quantityKg, idempotencyKey, location, condition, ripenessStage, storageCondition, storageTemperatureC?, handlingCondition, evidenceUrls }` | Creates the shipment's one append-only quantity ledger at `AT_DESTINATION`; dispatch/receipt mismatch requires operator resolution |
+| GET | `/cargo/shipments/:id/ledger` | — | Party-scoped reconciliation with received/sold/rejected/returned/delivered/in-transit/remaining/variance balances and audit events |
+| POST | `/cargo/shipments/:id/events` | `{ type: SALE\|REJECTED\|RETURNED\|FINAL_DELIVERY, quantityKg, idempotencyKey, location, evidenceUrls?, priceINRPerKg? }` | Appends a quantity disposition; sales are farmer reported, transport dispositions are transporter reported |
+| POST | `/cargo/shipments/:id/variance` | `{ quantityKg, idempotencyKey, location, evidenceUrls, note }` | Operator records a documented quantity variance against remaining stock |
+| PATCH | `/cargo/shipments/:id/receipt-variance` | `{ explanation, evidenceUrls }` | Operator closes dispatch/receipt discrepancy review without erasing original values |
+| GET | `/cargo/shipments/:id/options` | — | Same sell-here and reroute summary for both parties: remaining quantity, current buyer quotes, route/ETA/transport quote, current-cargo Freshness estimate, costs, uncertainty and sunk cost shown separately |
+| POST | `/cargo/shipments/:id/decisions` | `{ option, idempotencyKey, buyerOfferId? , marketId? }` | Farmer records a versioned commercial choice; sell-here buyer quotes remain labelled unverified |
+| POST | `/cargo/shipments/:id/decisions/:version/transporter` | `{ accepted, reason? }` | Current transporter accepts or declines the same option/version |
+| PATCH | `/cargo/shipments/:id/decisions/:version/market-verification` | `{ acceptedCrop, receivingHoursVerified, targetPriceINRPerKg?, targetPriceSource?, targetHandlingCostsINR?, currentSellPriceINRPerKg?, currentHandlingCostsINR?, evidenceUrl, note }` | Operator records market facts; expires earlier approvals so both parties review the changed information |
+| POST | `/cargo/shipments/:id/decisions/:version/execute` | — | Revalidates benefit, quote, vehicle capacity, market acceptance and receiving hours, then creates an ordinary linked `TransportRequest` for matching; dispatch moves only when child shipment is picked up |
+| POST | `/cargo/shipments/:id/decisions/:version/sell` | `{ quantityKg, priceINRPerKg, evidenceUrls, idempotencyKey }` | Farmer accepts an amount up to the selected current buyer offer after transporter confirms the same plan |
+| POST | `/cargo/shipments/:id/decisions/:version/cancel` | `{ reason }` | Cargo party cancels an unselected reroute request; confirmed trips use the existing trip-cancellation process |
+
+Configuration: `CARGO_MAX_REROUTE_ATTEMPTS` (default 2) and `CARGO_MIN_REROUTE_BENEFIT_INR` (default 0). Prices/market hours/acceptance unavailable from existing sources remain unknown and block execution until operator evidence is recorded. A reroute's child `TransportRequest` and `TripShipment` point back to the parent shipment and cargo plan; normal transporter matching, booking, payment and tracking continue to apply.
+
 ### Money: the split, and what is not ours (ADR-043)
 
 The pooled pricing engine (ADR-035) alone decides what a farmer owes. Payments only move that decided number:
@@ -146,6 +165,7 @@ rejects a marketplace token with `AUTH_FORBIDDEN`.
 | GET | `/admin/payouts` | — | Route linked-account state per transporter |
 | GET | `/admin/billing` | `?status=&tripId=` | Settlements per shipment, each with a `settlement` block: amount / commission / transporter share in paise, Razorpay's gateway and transfer fees where reported, `netPlatformPaise` (null while unknown), `payoutState`, `transferId`, refund and reversal ids (ADR-043) |
 | POST | `/admin/payments/:id/retry-payout` | — | Re-attempt one stuck Route transfer (`PENDING` or `FAILED`). Refuses to act on a payment that already carries a `transferId`, so a retry can never double-pay, and never touches the farmer's payment |
+| GET | `/admin/fresh-ops` | — | Read-only queues for stale/invalid price observations, open recovery/no-replacement incidents, cargo discrepancies/unsold quantity/pending consent, and recommendations with no feasible market. Price-import failures are reported as unavailable because no import job/log is configured |
 
 `PATCH /documents/:id/review` (the original operator route) also requires the admin claim.
 
