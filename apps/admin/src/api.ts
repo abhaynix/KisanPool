@@ -408,10 +408,15 @@ export const api = {
     generatedAt: string;
     marketPrices: { staleOrInvalid: Array<any> };
     failedImports: { configured: boolean; failedCount: number | null; note: string };
-    recovery: { openIncidents: Array<any>; noReplacement: Array<any>; custodyDiscrepancies: Array<any> };
+    recovery: { openIncidents: Array<any>; noReplacement: Array<any>; custodyDiscrepancies: Array<any>; settlements: Array<any> };
     cargo: { receiptDiscrepancies: Array<any>; unsoldCargo: Array<any>; pendingConsentOrReroute: Array<any> };
     noFeasibleFreshRecommendations: Array<any>;
   }>('/admin/fresh-ops'),
+
+  verifyRecoveryLegCompletion: (incidentId: string, sequence: number, input: { completedDistanceKm: number; evidenceUrl: string }) =>
+    request(`/recovery/settlements/${encodeURIComponent(incidentId)}/legs/${sequence}/verify-completion`, {
+      method: 'PATCH', body: JSON.stringify(input),
+    }),
 
   users: (query: { q?: string; role?: string }) => {
     const params = new URLSearchParams();

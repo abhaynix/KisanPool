@@ -1,12 +1,15 @@
 import { createHash } from 'crypto';
+import { config } from '../../config';
 import { haversineKm } from '../../lib/geo';
-import { FreshBuyerOffer, FreshDeliveryOutcome, FreshRecommendation, TransportRequest, TripShipment } from '../../models';
+import { FreshBuyerOffer, FreshDeliveryOutcome, FreshRecommendation, Market, TransportRequest, TripShipment } from '../../models';
 import { ApiError } from '../../lib/envelope';
 import { createRequest } from '../transport/service';
 import { KNOWN_MANDIS } from '../ai/places';
 import { previewFreshMarketTransport } from './preview';
 import { rankFreshOptions, RANKING_POLICY_VERSION } from './ranking';
 import { estimateFreshness, FRESHNESS_MODEL_VERSION, getCropProfile } from '../freshness/profiles';
+import { buildFreshDemoScenario, FRESH_DEMO_ID } from './demo-scenario';
+import { readMarketEvidence } from './market-data';
 
 export const FRESH_PRICE_POLICY_VERSION = 'market-price-24h-72h-v1';
 const SNAPSHOT_TTL_MS = 15 * 60 * 1000;
@@ -40,7 +43,15 @@ export function getFreshCropCatalogue() {
   }];
 }
 
-function marketCandidates(pickup: { lat: number; lng: number }, radiusKm: number) {
+async function marketCandidates(pickup: { lat: number; lng: number }, radiusKm: number) {
+  const catalogue = (await Market.find({ active: true }).lean()).filter((market) => market.location?.lat != null && market.location?.lng != null);
+  if (catalogue.length) return catalogue.map((market) => ({
+    marketId: market.code,
+    name: market.name,
+    location: market.location!,
+    source: `${market.sourceName}${market.sourceUrl ? ` · ${market.sourceUrl}` : ''}`,
+    distanceKm: haversineKm(pickup, market.location!),
+  })).filter((market) => market.distanceKm <= radiusKm).sort((a, b) => a.distanceKm - b.distanceKm);
   const within = (radius: number) => KNOWN_MANDIS
     .map((market) => ({
       marketId: market.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
@@ -65,7 +76,9 @@ function marketCandidates(pickup: { lat: number; lng: number }, radiusKm: number
 export async function createFreshRecommendation(farmerId: string, input: FreshInput) {
   const profile = getCropProfile(input.cropKey)!;
   const generatedAt = new Date();
-  const candidates = marketCandidates(input.pickup, input.searchRadiusKm);
+  const candidates = await marketCandidates(input.pickup, input.searchRadiusKm);
+  const evidence = await readMarketEvidence(input.cropKey, generatedAt);
+  const evidenceByMarket = new Map(evidence.map((item) => [item.code, item]));
   const transportPreviews = await previewFreshMarketTransport({
     farmerId,
     quantityKg: input.quantityKg,
@@ -81,6 +94,9 @@ export async function createFreshRecommendation(farmerId: string, input: FreshIn
   const previewsByMarket = new Map(transportPreviews.options.map((option) => [option.marketId, option]));
 
   const options = candidates.map((market) => {
+    const marketEvidence = evidenceByMarket.get(market.marketId);
+    const priceEvidence = marketEvidence?.price;
+    const validPrice = priceEvidence?.dataStatus === 'VALID' && priceEvidence.eligibleForLiveRecommendation;
     const preview = previewsByMarket.get(market.marketId);
     const route = preview?.route;
     const transport = preview?.transport.candidates[0];
@@ -99,7 +115,7 @@ export async function createFreshRecommendation(farmerId: string, input: FreshIn
       marketName: market.name,
       marketLocation: market.location,
       marketReferenceSource: market.source,
-      marketAcceptance: 'UNKNOWN' as const,
+      marketAcceptance: marketEvidence?.acceptance.accepted ?? 'UNKNOWN',
       distanceFromPickupKm: Math.round(market.distanceKm * 10) / 10,
       route: route ?? null,
       arrivalAt: route?.estimatedArrivalAt ?? new Date(
@@ -108,13 +124,23 @@ export async function createFreshRecommendation(farmerId: string, input: FreshIn
       transport: preview?.transport.available && transport
         ? { available: true, ...transport }
         : { available: false, candidates: [], reason: 'NO_VEHICLE_AVAILABLE' },
-      price: null,
+      price: priceEvidence ? {
+        sourceType: priceEvidence.sourceType,
+        status: priceEvidence.dataStatus,
+        minINRPerKg: priceEvidence.minPriceINRPerKg,
+        modalINRPerKg: priceEvidence.modalPriceINRPerKg,
+        maxINRPerKg: priceEvidence.maxPriceINRPerKg,
+        observedAt: priceEvidence.observedAt,
+        sourceName: priceEvidence.sourceName,
+        sourceUrl: priceEvidence.sourceUrl,
+        sourcePriceUnit: priceEvidence.sourcePriceUnit,
+      } : null,
       freshness,
       expectedSaleableKg: null,
       unknownCostItems: ['Market handling and selling costs are not configured.'],
       warnings: [
-        'MARKET_ACCEPTANCE_UNVERIFIED',
-        'PRICE_DATA_UNAVAILABLE',
+        ...(!marketEvidence?.acceptance.accepted ? ['MARKET_ACCEPTANCE_UNVERIFIED'] : []),
+        ...(!validPrice ? ['PRICE_DATA_UNAVAILABLE_OR_INELIGIBLE'] : []),
         'SALEABLE_QUANTITY_UNSUPPORTED',
         ...(!transport ? ['NO_VEHICLE_AVAILABLE'] : []),
       ],
@@ -124,7 +150,7 @@ export async function createFreshRecommendation(farmerId: string, input: FreshIn
   const rankingCandidates = options.map((option) => ({
     marketId: option.marketId,
     marketName: option.marketName,
-    cropAccepted: 'UNKNOWN' as const,
+    cropAccepted: (option.marketAcceptance === true ? true : option.marketAcceptance === false ? false : 'UNKNOWN') as boolean | 'UNKNOWN',
     receivingHoursPass: 'UNKNOWN' as const,
     route: {
       available: option.route != null,
@@ -140,8 +166,9 @@ export async function createFreshRecommendation(farmerId: string, input: FreshIn
       vehicleId: 'vehicleId' in option.transport ? option.transport.vehicleId : null,
     },
     price: {
-      sourceType: 'NONE', status: 'UNAVAILABLE',
-      minINRPerKg: null, modalINRPerKg: null, maxINRPerKg: null,
+      sourceType: option.price?.sourceType ?? 'NONE', status: option.price?.status ?? 'UNAVAILABLE',
+      minINRPerKg: option.price?.minINRPerKg ?? null, modalINRPerKg: option.price?.modalINRPerKg ?? null, maxINRPerKg: option.price?.maxINRPerKg ?? null,
+      observedAt: option.price?.observedAt,
     },
     quantityKg: input.quantityKg,
     expectedSaleableKg: null,
@@ -156,8 +183,8 @@ export async function createFreshRecommendation(farmerId: string, input: FreshIn
   });
   const missingData = [...new Set([
     ...(candidates.length ? [] : ['NO_MARKET_CANDIDATES_IN_RADIUS']),
-    'MARKET_CROP_ACCEPTANCE',
-    'LIVE_MARKET_PRICE',
+    ...(evidence.some((item) => item.acceptance.accepted != null) ? [] : ['MARKET_CROP_ACCEPTANCE']),
+    ...(evidence.some((item) => item.price?.eligibleForLiveRecommendation) ? [] : ['LIVE_MARKET_PRICE']),
     'MARKET_RECEIVING_HOURS',
     'SUPPORTED_SALEABLE_QUANTITY',
     'MARKET_HANDLING_COSTS',
@@ -191,15 +218,17 @@ export async function createFreshRecommendation(farmerId: string, input: FreshIn
 }
 
 export async function getFreshRecommendation(farmerId: string, recommendationId: string) {
+  if (recommendationId === FRESH_DEMO_ID) {
+    if (!config.freshDemoData) throw new ApiError('RESOURCE_NOT_FOUND', 'Fresh demo data is disabled.');
+    return { ...buildFreshDemoScenario(), farmerId };
+  }
   // Querying by owner returns the same not-found result for absent and foreign IDs.
   return FreshRecommendation.findOne({ _id: recommendationId, farmerId }).lean();
 }
 
-/** Local seeded fixture lookup, scoped to the signed-in farmer. */
+/** Deterministic local simulation, scoped to the signed-in farmer. */
 export async function getFreshDemoRecommendation(farmerId: string) {
-  return FreshRecommendation.findOne({ farmerId, 'input.demoScenarioKey': 'fresh-demo-v1' })
-    .sort({ generatedAt: -1 })
-    .lean();
+  return { ...buildFreshDemoScenario(), farmerId };
 }
 
 export async function selectFreshRecommendation(
@@ -210,6 +239,7 @@ export async function selectFreshRecommendation(
     confirmedFarmerPayableINR?: number;
   },
 ) {
+  if (recommendationId === FRESH_DEMO_ID) throw new ApiError('BOOKING_STATE_INVALID', 'Synthetic demo options cannot create transport requests.');
   const snapshot = await getFreshRecommendation(farmerId, recommendationId) as any;
   if (!snapshot) throw new ApiError('RESOURCE_NOT_FOUND', 'That recommendation was not found.');
   const requestId = createHash('sha256').update(`fresh-selection:${String(snapshot._id)}`).digest('hex').slice(0, 24);
@@ -228,6 +258,18 @@ export async function selectFreshRecommendation(
   const candidate = snapshot.options.find((option: any) => option.marketId === selected.marketId);
   if (!candidate || candidate.marketAcceptance !== true || !candidate.route || !candidate.transport?.available) {
     throw new ApiError('BOOKING_STATE_INVALID', 'Market acceptance, route, or transport is no longer verified.');
+  }
+  const currentMarket = (await readMarketEvidence(snapshot.input.cropKey)).find((market) => market.code === candidate.marketId);
+  if (currentMarket?.acceptance.accepted !== true || currentMarket.acceptance.receivingHoursVerified !== true) {
+    throw new ApiError('BOOKING_STATE_INVALID', 'Current market acceptance or receiving-hours evidence is unavailable. Create a new comparison after it is verified.');
+  }
+  if (!currentMarket.price?.eligibleForLiveRecommendation) {
+    throw new ApiError('BOOKING_STATE_INVALID', 'The market price is missing, stale or ineligible. Create a new comparison after current evidence is available.');
+  }
+  const oldPrice = candidate.price?.modalINRPerKg;
+  const currentPrice = currentMarket.price.modalPriceINRPerKg;
+  if (oldPrice == null || currentPrice == null || Math.abs(currentPrice - oldPrice) > Math.max(1, oldPrice * 0.03)) {
+    throw new ApiError('BOOKING_STATE_INVALID', 'Market price changed materially. Create a new comparison and review the updated estimate.');
   }
   const marketPoint = candidate.marketLocation;
   const freshQuote = await previewFreshMarketTransport({

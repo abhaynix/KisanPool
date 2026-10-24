@@ -221,6 +221,26 @@ These are written by the backend from other records and must never be accepted f
 
 ## Fresh extensions
 
+### Market
+
+Canonical operator-reviewed catalogue record keyed by stable lowercase `code`, with display name, coordinates, catalogue source, operator identity/verification time and active state. `MarketPriceObservation.marketId` and `MarketAcceptanceObservation.marketId` reference this model.
+
+### MarketPriceObservation
+
+Append-only source observation containing raw price values and unit, normalized INR/kg values, source type/name/URL/record ID, observed/fetched timestamps and validation status. Read services recompute age at request time; stored `dataStatus` alone cannot keep an expired observation eligible. Synthetic observations remain `SIMULATED` and never feed live ranking.
+
+### MarketAcceptanceObservation
+
+Append-only crop-specific market acceptance and receiving-hours evidence with source, observation/expiry times, operations verification and verifier identity. Expired or absent records are exposed as unknown. A verified schedule is not itself proof that a specific ETA falls inside receiving hours; the current ranking path fails closed until that schedule check is implemented.
+
+### Recovery settlement ledger
+
+Each recovery incident keeps per-leg settlement facts: expected versus earned compensation, verified distance/evidence/verifier, payment references, idempotency key, retry/status metadata and eventual provider transfer reference. Estimated compensation is never marked earned. Completed-leg facts can be recorded idempotently by an admin; payment remains blocked until the one-recipient `Payment`/webhook contract is extended and reconciled.
+
+### Local Fresh simulation
+
+`buildFreshDemoScenario()` is deterministic, in-memory and read-only. It is not a persisted market observation and its recommendation objects are forced non-eligible, so they cannot be selected into the real transport flow.
+
 ### TransportRequest Fresh link
 
 | Field | Type | Notes |

@@ -441,3 +441,26 @@ Context: Operators need to find stale prices, no-feasible-market results, open r
 Decision: Add `GET /admin/fresh-ops`, guarded by the existing admin JWT claim, and a console panel that reads the underlying market, recovery, recommendation and cargo records. The queue does not resolve incidents or alter data. When a source subsystem does not exist, such as market-price import job history, the API explicitly reports that it is unconfigured instead of showing a fabricated zero count.
 Rationale: Read-only aggregation makes operational work visible while retaining each domain's existing write authority and audit trail. Explicitly unavailable monitoring prevents absence of instrumentation from looking healthy.
 Alternatives considered: A second incident-management store or automatic cleanup would duplicate source-of-truth state and risk hiding unresolved commercial or custody issues.
+## ADR-050: Fresh demo simulation and persisted market evidence
+
+Date: 2026-10-25
+Status: Accepted
+
+The Fresh comparison demo is a deterministic in-memory scenario with explicit simulation provenance. It is guarded by `FRESH_DEMO_DATA`, uses no price/acceptance/route/vehicle provider and cannot select or create a transport request. Its ranking values are computed from the same equal-weight ranking engine by a demo-only shadow calculation; returned candidates are forcibly marked `fullyEligible: false`, `SIMULATED`, and `NOT_BOOKABLE`.
+
+Live evidence uses a canonical `Market` catalogue, append-only `MarketPriceObservation` and `MarketAcceptanceObservation` records, and an authenticated farmer read endpoint. Admin-claim writes capture source, verification, and observation/expiry metadata. The service recalculates price age at read time and fails closed on missing or stale evidence. Receiving-hours schedule matching and supported saleable-quantity evidence remain unavailable, so these records cannot alone enable booking.
+
+The Government of India [OGD catalog](https://data.gov.in/catalog/current-daily-price-various-commodities-various-markets-mandi) identifies the daily mandi min/modal/max dataset as generated through AGMARKNET and offers a catalog/data API. This repository has no configured API key, authorized import job, or verified commodity/market mapping; therefore no provider fetcher is enabled. Operators may record cited evidence, but manually entered data remains subject to its source/provenance and expiry and is not described as an automated feed.
+
+Razorpay Route documents [multiple linked-account transfers](https://razorpay.com/route/) and transfer records sourced from captured payments in its [transfer reporting API](https://razorpay.com/docs/api/payments/route/fetch-transfers-for-a-settlement/?preferred-country=IN). That establishes provider capability in general, not safety in this application: KisanPool currently stores one transfer ID and associates one trip transporter with each shipment payment, and an order-attached transfer may already direct the full payout to the original driver. Until allocation, existing-transfer reconciliation, idempotency, and transfer-webhook storage are extended together, recovery earnings stay in the durable operations hold queue rather than issuing an additional transfer.
+
+Alternatives considered: allowing simulated `VALID` prices in the production ranker (rejected because it could create a live booking); returning mock prices from the live path (rejected as fabricated data); and adding an unconfigured provider integration (rejected because it would silently fail or imply current data availability).
+
+## ADR-051: Hold normal single-recipient payout for recovery trips
+
+Date: 2026-10-25
+Status: Accepted
+
+When a trip has a recovery incident, payment order creation omits the ordinary order-attached single-transporter Route transfer. After capture, normal payout remains `PENDING` until per-leg reconciliation is supported. Completed-leg distance and evidence are recorded by an admin through an atomic, idempotent update and compensation uses the existing route-cost and commission rules. The admin queue distinguishes estimate from earned amount. No payment status is edited by recovery code, no second farmer charge is created, and no transfer is claimed complete.
+
+Razorpay Route has multi-linked-account transfer capability, but current `Payment`/webhook state stores one transfer ID and does not reconcile existing order-attached transfers across legs. Automatic multi-recipient payout is deferred until payment state, transfer creation, and webhook reconciliation can be changed together. This hold can delay transporter payment; it is safer than paying the original driver the full recovered-trip payout or duplicating it.

@@ -170,6 +170,7 @@ export interface FreshRecommendationSnapshot {
   _id: string;
   farmerId: string;
   input: FreshRecommendationInput;
+  demoScenarioKey?: string;
   generatedAt: string;
   expiresAt: string;
   cropProfileVersion: string;
@@ -181,7 +182,7 @@ export interface FreshRecommendationSnapshot {
     marketName: string;
     marketLocation: { lat: number; lng: number };
     marketReferenceSource: string;
-    marketAcceptance: 'UNKNOWN' | boolean;
+    marketAcceptance: 'UNKNOWN' | 'SIMULATED' | boolean;
     distanceFromPickupKm: number;
     route: {
       distanceKm: number;
@@ -199,7 +200,7 @@ export interface FreshRecommendationSnapshot {
       vehicleToPickupEtaMinutes?: number;
       reason?: string;
     };
-    price: null | { sourceType: string; status: string; modalINRPerKg: number };
+    price: null | { sourceType: string; status: string; minINRPerKg?: number; modalINRPerKg: number; maxINRPerKg?: number; sourceName?: string; sourcePriceUnit?: string; observedAt?: string | null };
     freshness: {
       status: 'ESTIMATED' | 'INSUFFICIENT_DATA';
       score: number | null;
@@ -210,6 +211,9 @@ export interface FreshRecommendationSnapshot {
       estimatedLatestArrivalAt: null;
     };
     expectedSaleableKg: number | null;
+    financials?: { grossRevenueINR: { conservative: number; expected: number; upper: number }; totalKnownCostsINR: number; netProceedsINR: { conservative: number; expected: number; upper: number }; unknownCostItems: string[] } | null;
+    explanation?: string;
+    simulation?: { receivingHours: string; priceUnit: string; provenance: string; saleableAssumption: string; costAssumption: string };
     unknownCostItems: string[];
     warnings: string[];
   }>;

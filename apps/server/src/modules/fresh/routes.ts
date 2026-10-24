@@ -6,6 +6,7 @@ import { asyncHandler } from '../../middleware/error';
 import { requireAuth, requireRole, type AuthedRequest } from '../../middleware/auth';
 import { requireWritable } from '../resilience/guard';
 import { config } from '../../config';
+import { readMarketEvidence } from './market-data';
 import { createFreshRecommendation, getFreshCropCatalogue, getFreshRecommendation, getFreshDemoRecommendation, selectFreshRecommendation, recordFreshDeliveryOutcome, createFreshBuyerOffer, listFreshBuyerOffers } from './service';
 
 export const freshRouter = Router();
@@ -51,6 +52,12 @@ freshRouter.get(
     ok(res, getFreshCropCatalogue());
   }),
 );
+
+freshRouter.get('/markets', requireAuth, requireRole('FARMER'), asyncHandler<AuthedRequest>(async (req, res) => {
+  const cropKey = z.string().trim().toLowerCase().refine((value) => Boolean(getCropProfile(value))).parse(req.query.cropKey ?? 'tomato');
+  const markets = await readMarketEvidence(cropKey);
+  ok(res, { dataStatus: markets.length ? 'AVAILABLE' : 'NOT_CONFIGURED', markets });
+}));
 
 freshRouter.post(
   '/recommendations/:id/select',

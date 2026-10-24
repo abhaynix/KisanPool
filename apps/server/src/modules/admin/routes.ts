@@ -27,6 +27,8 @@ import {
   Trip,
   TripShipment,
   MarketPriceObservation,
+  Market,
+  MarketAcceptanceObservation,
   RecoveryIncident,
   CargoLedger,
   FreshRecommendation,
@@ -35,6 +37,7 @@ import {
 } from '../../models';
 import { reconcileVehicleVerification } from '../documents/service';
 import { retryPayout, settlementOf } from '../payments/service';
+import { requireWritable } from '../resilience/guard';
 
 export const adminRouter = Router();
 
@@ -215,11 +218,70 @@ adminRouter.get(
   }),
 );
 
+// Market facts are entered only by an admin and retain their source and validity window.
+adminRouter.get('/markets', requireAdmin, asyncHandler(async (_req, res) => {
+  const markets = await Market.find({}).sort({ name: 1 }).lean();
+  ok(res, markets);
+}));
+
+adminRouter.put('/markets/:code', requireAdmin, requireWritable, asyncHandler(async (req, res) => {
+  const code = z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).parse(req.params.code);
+  const body = z.object({
+    name: z.string().trim().min(1).max(120),
+    location: z.object({ name: z.string().trim().max(120).default(''), lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }),
+    sourceName: z.string().trim().min(1).max(120), sourceUrl: z.string().url().optional(),
+  }).parse(req.body);
+  const market = await Market.findOneAndUpdate(
+    { code },
+    { $set: { ...body, verifiedAt: new Date(), verifiedBy: (req as any).userId, active: true } },
+    { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true },
+  );
+  ok(res, market, 201);
+}));
+
+adminRouter.post('/markets/:code/acceptance', requireAdmin, requireWritable, asyncHandler(async (req, res) => {
+  const code = z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).parse(req.params.code);
+  const body = z.object({
+    cropKey: z.string().trim().toLowerCase().min(1).max(60), accepted: z.boolean(),
+    receivingHours: z.string().trim().min(1).max(120), receivingHoursVerified: z.boolean(),
+    sourceName: z.string().trim().min(1).max(120), sourceUrl: z.string().url().optional(),
+    observedAt: z.coerce.date(), expiresAt: z.coerce.date(),
+  }).parse(req.body);
+  if (body.observedAt > new Date() || body.expiresAt <= body.observedAt) throw new ApiError('VALIDATION_ERROR', 'Acceptance evidence must have a valid observation and expiry time.');
+  const market = await Market.findOne({ code, active: true });
+  if (!market) throw new ApiError('RESOURCE_NOT_FOUND', 'Market not found.');
+  const result = await MarketAcceptanceObservation.create({ ...body, marketId: market._id, verifiedBy: (req as any).userId, verificationStatus: 'OPERATIONS_VERIFIED' });
+  ok(res, result, 201);
+}));
+
+adminRouter.post('/markets/:code/prices', requireAdmin, requireWritable, asyncHandler(async (req, res) => {
+  const code = z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).parse(req.params.code);
+  const body = z.object({
+    cropKey: z.string().trim().toLowerCase().min(1).max(60), sourceCommodityName: z.string().trim().min(1).max(120),
+    sourceMinPrice: z.number().finite().min(0), sourceModalPrice: z.number().finite().min(0), sourceMaxPrice: z.number().finite().min(0),
+    sourcePriceUnit: z.enum(['INR_PER_KG', 'INR_PER_QUINTAL', 'INR_PER_TONNE']),
+    sourceType: z.enum(['OFFICIAL', 'CONFIRMED_BUYER', 'OPERATOR_INDICATIVE']), sourceName: z.string().trim().min(1).max(120),
+    sourceUrl: z.string().url().optional(), sourceRecordId: z.string().trim().max(160).optional(), observedAt: z.coerce.date(),
+  }).parse(req.body);
+  const market = await Market.findOne({ code, active: true });
+  if (!market) throw new ApiError('RESOURCE_NOT_FOUND', 'Market not found.');
+  try {
+    const observation = await MarketPriceObservation.create({ ...body, marketId: market._id, fetchedAt: new Date(), dataStatus: 'INVALID' });
+    ok(res, observation, 201);
+  } catch (error) {
+    if ((error as { code?: number }).code === 11000 && body.sourceRecordId) {
+      const existing = await MarketPriceObservation.findOne({ sourceType: body.sourceType, sourceRecordId: body.sourceRecordId });
+      if (existing) return ok(res, existing);
+    }
+    throw error;
+  }
+}));
+
 // One read-only queue for Fresh data quality and cargo/recovery work that needs
 // an operator. Each record keeps its real source status; this route does not
 // infer market validity or silently resolve custody differences.
 adminRouter.get('/fresh-ops', requireAdmin, asyncHandler(async (_req, res) => {
-  const [prices, incidents, ledgers, recommendations] = await Promise.all([
+  const [prices, incidents, ledgers, recommendations, recoverySettlements] = await Promise.all([
     MarketPriceObservation.find({ dataStatus: { $in: ['STALE', 'EXPIRED', 'INVALID'] } })
       .populate('marketId', 'name').sort({ fetchedAt: -1 }).limit(100).lean(),
     RecoveryIncident.find({ status: { $nin: ['CLOSED', 'RECOVERED'] } })
@@ -230,6 +292,7 @@ adminRouter.get('/fresh-ops', requireAdmin, asyncHandler(async (_req, res) => {
       { 'plans.status': { $in: ['PROPOSED', 'BOOKING_REQUESTED'] } },
     ] }).sort({ updatedAt: -1 }).limit(200).lean(),
     FreshRecommendation.find({ status: 'NO_FEASIBLE_MARKET' }).sort({ generatedAt: -1 }).limit(100).lean(),
+    RecoveryIncident.find({ 'settlement.status': { $in: ['PENDING_OPERATIONS_REVIEW', 'PENDING', 'RETRYABLE', 'BLOCKED_REQUIRES_OPERATIONS', 'BLOCKED_PAYOUT_CAPABILITY'] } }).sort({ updatedAt: -1 }).limit(100).lean(),
   ]);
   const failedImportTracking = { configured: false, failedCount: null as number | null, note: 'No market-price import job or failure log is configured in this deployment.' };
   ok(res, {
@@ -240,6 +303,7 @@ adminRouter.get('/fresh-ops', requireAdmin, asyncHandler(async (_req, res) => {
       openIncidents: incidents,
       noReplacement: incidents.filter((incident: any) => incident.status === 'NO_REPLACEMENT_AVAILABLE'),
       custodyDiscrepancies: incidents.filter((incident: any) => ['HANDOVER_IN_PROGRESS', 'ESCALATED_TO_OPERATIONS'].includes(incident.status) || incident.custodyAcks?.some((ack: any) => ack.mismatch === true)),
+      settlements: recoverySettlements.map((incident: any) => ({ incidentId: incident._id, tripId: incident.tripId, status: incident.settlement?.status, ledger: incident.settlement?.ledger ?? [], legs: incident.legs.map((leg: any) => ({ sequence: leg.sequence, state: leg.state })) })),
     },
     cargo: {
       receiptDiscrepancies: ledgers.filter((ledger: any) => ledger.dispatchReceiptVarianceKg !== 0),

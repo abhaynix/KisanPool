@@ -2,27 +2,26 @@
 
 ## Data boundary
 
-The test fixtures use **synthetic demo values**. They do not represent current mandi prices, confirmed live buyers, vehicle availability, food safety, measured savings, or field outcomes. Never present the figures below as real-world results.
+The tests use synthetic values. They do not represent current mandi prices, confirmed buyers, vehicle availability, food safety, measured savings, or field outcomes. Seeded API snapshots use reference market locations and an unverified farmer-reported quote; they are not live market evidence and are not bookable.
 
-## Reproducible demo checks
-
-Run the deterministic scenario checks:
+## Offline checks
 
 ```sh
-node --import tsx --test tests/kisanpool-demo.test.ts tests/cargo-ledger.test.ts tests/fresh-engine.test.ts
+npm test
 ```
 
-The scenario compares a nearer lower-price destination with a farther higher-price destination and checks the separate balanced, price-only, fastest, and closest outputs. It also models 100 kg received, 60 kg sold, and the remaining 40 kg moving through a replacement/reroute leg. It does not write a payment: actual payment and payout continue through the ordinary existing payment records and settlement services.
+This runs the Fresh ranking, freshness, market-price normalization, cargo-ledger and demo scenario tests without touching MongoDB. The scenario compares a nearer/lower-price destination with a farther/higher-price destination and checks the four ranking views. It also models 100 kg received, 60 kg sold and 40 kg remaining. No payment is created or changed.
 
-## Operator walkthrough
+## Local seeded snapshot walkthrough
 
-1. Open the isolated Fresh prototype at `http://localhost:8765/prototypes/kisanpool-fresh-t00a.html`. Treat every displayed item as mock-only. Review the crop form and market comparison labels.
-2. Review the vehicle recovery and handover steps. Confirm the screen shows custody, party acknowledgement, and operations escalation states.
-3. Review partial sale: record 60 kg against the 100 kg parent quantity, then confirm only 40 kg is eligible for a next-leg choice. Both farmer and transporter approvals must refer to the same option and version.
-4. In the operator console, open **Fresh & cargo data quality**. The API requires an admin-claim token. The queue displays recorded stale/invalid observations, open incidents, no-replacement cases, receipt discrepancies, pending decisions, unsold cargo, and no-feasible-market recommendations.
-5. Confirm the API reports price-import monitoring as **not configured**. Do not infer there were zero failed imports: the repository has no price-import job or failure log to query.
-6. Payment settlement is verified by the existing billing and payment flows; this demo fixture does not create, capture, refund, or transfer money.
+1. Follow the MongoDB and app setup in `README.md`; set `FRESH_DEMO_DATA=true` and `EXPO_PUBLIC_FRESH_DEMO_DATA=true` in `.env`, then restart the server and Expo Metro.
+2. Start the server and mobile app. Sign in as farmer `9000000001`; with no OTP provider key, the OTP appears in the server terminal.
+3. Open Fresh Produce and choose **Open synthetic comparison demo**. The comparison is computed in memory; no `seed:fresh` command is needed.
+4. Verify four different market winners: balanced, highest net, fastest and closest. The page labels all fixture evidence simulated and disables booking.
+5. To inspect the separate static mock prototype, run `python3 -m http.server 8765 --directory docs` and open `http://localhost:8765/prototypes/kisanpool-fresh-t00a.html`.
+
+The admin **Fresh & cargo data quality** page is protected by an admin-claim token. Price import monitoring reports **not configured** because there is no import job/failure log; this must not be interpreted as zero failed imports.
 
 ## Acceptance limitations
 
-The deterministic tests cover ranking outputs, quantity balance, reroute allocation, and same-version bilateral consent. The UI prototype is isolated mock data and does not call production APIs. Full recovery, booking, Razorpay settlement, and MongoDB concurrency acceptance requires a separately seeded local integration environment; this document does not claim those live workflows were run.
+The deterministic tests cover ranking outputs, price unit conversion and staleness, model registration, quantity balance, reroute allocation and same-version bilateral consent. They are not live API/database tests. The local simulation demonstrates numerical trade-offs but does not assert real prices, acceptance, transport availability or savings. Full recovery, booking, Razorpay settlement and MongoDB concurrency acceptance require a separately prepared isolated integration environment.

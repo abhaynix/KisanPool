@@ -140,7 +140,7 @@ export default function FreshProduceForm() {
       <LocationPicker visible={pickerOpen} onClose={() => setPickerOpen(false)} onPick={(point) => { setPickup(point); setPickupTouched(true); }} initial={pickup} title="Where are the tomatoes?" confirmLabel="Use this pickup" />
 
       {FRESH_DEMO_DATA_ENABLED ? (
-        <Button label="Open seeded demo comparison" icon="science" variant="secondary" loading={demoBusy} onPress={() => void openDemoSnapshot()} style={{ marginBottom: space.md }} />
+        <Button label="Open synthetic comparison demo" icon="science" variant="secondary" loading={demoBusy} onPress={() => void openDemoSnapshot()} style={{ marginBottom: space.md }} />
       ) : null}
 
       <Txt variant="labelLg" color={colors.onSurfaceVariant} style={{ marginBottom: space.sm }}>Arrival timing</Txt>

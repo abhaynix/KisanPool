@@ -4,9 +4,22 @@ import { Empty, ErrorBox, Freshness, Section, SkeletonTable, Stat, Toolbar, useR
 export function FreshOpsTab() {
   const ops = useRemote(() => api.freshOps(), 60_000);
   const data = ops.data;
+  const verifyRecoveryLeg = async (incidentId: string, sequence: number) => {
+    const completedDistanceKm = Number(window.prompt('Enter the verified completed leg distance in km:'));
+    if (!Number.isFinite(completedDistanceKm) || completedDistanceKm <= 0) return;
+    const evidenceUrl = window.prompt('Paste the evidence URL for this distance:')?.trim();
+    if (!evidenceUrl) return;
+    try {
+      await api.verifyRecoveryLegCompletion(incidentId, sequence, { completedDistanceKm, evidenceUrl });
+      await ops.refresh();
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Could not record completion evidence.');
+    }
+  };
   const counts = data ? [
     data.marketPrices.staleOrInvalid.length,
     data.recovery.openIncidents.length,
+    data.recovery.settlements.length,
     data.cargo.receiptDiscrepancies.length,
     data.cargo.unsoldCargo.length,
     data.cargo.pendingConsentOrReroute.length,
@@ -24,6 +37,7 @@ export function FreshOpsTab() {
         <Stat label="Needs attention" value={String(total)} />
         <Stat label="Stale / invalid prices" value={String(data.marketPrices.staleOrInvalid.length)} />
         <Stat label="Open incidents" value={String(data.recovery.openIncidents.length)} />
+        <Stat label="Recovery settlements held" value={String(data.recovery.settlements.length)} />
         <Stat label="Cargo discrepancies" value={String(data.cargo.receiptDiscrepancies.length)} />
         <Stat label="Pending decisions" value={String(data.cargo.pendingConsentOrReroute.length)} />
       </div>
@@ -40,6 +54,14 @@ export function FreshOpsTab() {
         <div className="card stack">{data.recovery.openIncidents.map((item: any) => <div className="row" key={item._id} style={{ justifyContent: 'space-between' }}>
           <span>{item.category} · trip {String(item.tripId?._id ?? item.tripId)} · {item.description}</span><span className="badge warn">{item.status}</span>
         </div>)}</div>
+      </Section> : null}
+      {data.recovery.settlements.length ? <Section title="Recovery leg settlement queue">
+        <div className="card stack">{data.recovery.settlements.flatMap((incident: any) => incident.ledger.map((leg: any) => <div className="row" key={`${incident.incidentId}-${leg.legSequence}`} style={{ justifyContent: 'space-between' }}>
+          <span>Trip {String(incident.tripId)} · leg {leg.legSequence} · transporter {String(leg.transporterId)} · estimate ₹{leg.expectedCompensation ?? 'unknown'} · earned {leg.earnedCompensation == null ? 'awaiting verified completion' : `₹${leg.earnedCompensation}`}</span>
+          <span className="badge warn">{leg.status ?? incident.status}</span>
+          {leg.status === 'AWAITING_LEG_COMPLETION' && incident.legs.some((item: any) => item.sequence === leg.legSequence && item.state === 'COMPLETED') ? <button className="btn secondary" onClick={() => void verifyRecoveryLeg(String(incident.incidentId), leg.legSequence)}>Record verified leg facts</button> : null}
+        </div>))}</div>
+        <div className="label-sm muted">No payout is represented as complete here. Provider reconciliation is required before a leg can be marked paid.</div>
       </Section> : null}
       {data.cargo.receiptDiscrepancies.length ? <Section title="Cargo receipt discrepancies">
         <div className="card stack">{data.cargo.receiptDiscrepancies.map((item: any) => <div className="row" key={item._id} style={{ justifyContent: 'space-between' }}>

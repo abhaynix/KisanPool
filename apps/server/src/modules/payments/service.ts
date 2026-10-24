@@ -5,6 +5,7 @@ import { paiseToRupees, platformSplit, rupeesToPaise } from '../../lib/money';
 import { MIN_TRANSFER_PAISE, type PayoutState } from '@kisanpool/shared';
 import {
   Payment,
+  RecoveryIncident,
   Trip,
   TripShipment,
   TransporterPayoutAccount,
@@ -171,6 +172,7 @@ export async function createOrderForShipment(shipmentId: string, farmerId: strin
   const split = platformSplit(amount);
 
   const trip = shipment.tripId ? await Trip.findById(shipment.tripId) : null;
+  const hasRecovery = trip ? Boolean(await RecoveryIncident.exists({ tripId: trip._id })) : false;
 
   /*
    * One Payment row per shipment — `shipmentId` is uniquely indexed, so this is a
@@ -259,7 +261,7 @@ export async function createOrderForShipment(shipmentId: string, farmerId: strin
     : null;
   const eligibility = payoutEligibility(account);
   const transfers =
-    eligibility.eligible && account?.razorpayAccountId && split.transporterPaise >= MIN_TRANSFER_PAISE
+    !hasRecovery && eligibility.eligible && account?.razorpayAccountId && split.transporterPaise >= MIN_TRANSFER_PAISE
       ? [
           orderTransfer({
             account: account.razorpayAccountId,
@@ -278,7 +280,9 @@ export async function createOrderForShipment(shipmentId: string, farmerId: strin
 
   let order: { id: string; amount: number | string } | null = null;
   let mode: 'ORDER' | 'NONE' = 'NONE';
-  let payoutNote = transfers.length ? undefined : eligibility.reason;
+  let payoutNote = hasRecovery
+    ? 'Recovery per-leg earnings require reconciliation; automatic single-recipient payout is held.'
+    : transfers.length ? undefined : eligibility.reason;
 
   if (transfers.length) {
     try {
@@ -308,6 +312,10 @@ export async function createOrderForShipment(shipmentId: string, farmerId: strin
       throw new ApiError('PAYMENT_FAILED', 'We could not start the payment. Please try again.');
     }
   }
+
+  // A recovery trip must not create an order-attached payout to the original
+  // transporter before its per-leg allocation has been reconciled.
+  if (hasRecovery) mode = 'NONE';
 
   payment.razorpayOrderId = order.id;
   payment.transferMode = mode;
@@ -508,6 +516,13 @@ export async function payoutForPayment(paymentId: string): Promise<void> {
   // already transferred, or already handed to Razorpay with the order — either
   // way, creating another transfer would pay the driver twice
   if (payment.transferId) return;
+  const recovery = payment.tripId ? await RecoveryIncident.findOne({ tripId: payment.tripId }) : null;
+  if (recovery) {
+    await setPayout(payment, 'PENDING', {
+      lastTransferError: 'Recovery per-leg payout is held until the verified earnings and provider transfer reconciliation are completed.',
+    });
+    return;
+  }
   if (payment.transferMode === 'ORDER') {
     if (payment.payoutState === 'PENDING') await setPayout(payment, 'CREATED');
     return;

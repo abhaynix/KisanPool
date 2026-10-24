@@ -9,6 +9,7 @@ import { getDirections } from '../maps/service';
 import { priceTrip, routeCost, transporterEarning } from '../pooling/pricing';
 import { notifyRecoveryIncident } from '../notifications/service';
 import { config } from '../../config';
+import { requireWritable } from '../resilience/guard';
 
 export const recoveryRouter = Router();
 const fail = (message: string) => new ApiError('BOOKING_STATE_INVALID', message);
@@ -148,9 +149,9 @@ recoveryRouter.post('/incidents/:id/handover', requireAuth, requireRole('TRANSPO
       await Vehicle.updateOne({ _id: incident.originalVehicleId }, { $set: { status: 'AVAILABLE' } });
       const payments = await Payment.find({ tripId: incident.tripId }, '_id');
       incident.settlement ??= { status: 'PENDING_OPERATIONS_REVIEW', ledger: [] } as never;
-      incident.settlement.status = 'BLOCKED_PAYOUT_CAPABILITY';
-      incident.settlement.ledger.push({ legSequence: 1, transporterId: new Types.ObjectId(String(incident.originalTransporterId)), quotedCost: completedCost, earnedCompensation: completedEarning, farmerChargeAdjustment: 0, paymentIds: payments.map(p => p._id), recordedAt: new Date() } as never);
-      incident.settlement.ledger.push({ legSequence: nextSequence, transporterId: new Types.ObjectId(String(proposal.transporterId)), quotedCost: proposal.quoteTotal ?? 0, earnedCompensation: 0, farmerChargeAdjustment: 0, paymentIds: payments.map(p => p._id), recordedAt: new Date() } as never);
+      incident.settlement.status = 'BLOCKED_REQUIRES_OPERATIONS';
+      incident.settlement.ledger.push({ legSequence: 1, transporterId: new Types.ObjectId(String(incident.originalTransporterId)), quotedCost: completedCost, expectedCompensation: completedEarning, earnedCompensation: completedEarning, status: 'BLOCKED_REQUIRES_OPERATIONS', attemptCount: 0, idempotencyKey: `${String(incident._id)}:leg:1`, lastError: 'Existing shipment payout targets one transporter; per-leg split requires operations reconciliation.', farmerChargeAdjustment: 0, paymentIds: payments.map(p => p._id), recordedAt: new Date() } as never);
+      incident.settlement.ledger.push({ legSequence: nextSequence, transporterId: new Types.ObjectId(String(proposal.transporterId)), quotedCost: proposal.quoteTotal ?? 0, expectedCompensation: transporterEarning(proposal.quoteTotal ?? 0), earnedCompensation: null, status: 'AWAITING_LEG_COMPLETION', attemptCount: 0, idempotencyKey: `${String(incident._id)}:leg:${nextSequence}`, lastError: 'Estimate only; earned amount awaits verified completion distance.', farmerChargeAdjustment: 0, paymentIds: payments.map(p => p._id), recordedAt: new Date() } as never);
       incident.status = 'RECOVERED';
     }
   }
@@ -166,7 +167,50 @@ recoveryRouter.get('/incidents/:id', requireAuth, asyncHandler<AuthedRequest>(as
   ok(res, farmer ? { ...incident.toObject(), affectedShipments: incident.affectedShipments.filter(s => String(s.farmerId) === req.userId), settlement: undefined } : incident);
 }));
 
+recoveryRouter.patch('/settlements/:incidentId/legs/:sequence/verify-completion', requireAdmin, requireWritable, asyncHandler(async (req, res) => {
+  const body = z.object({ completedDistanceKm: z.number().positive().max(2000), evidenceUrl: z.string().url() }).parse(req.body);
+  const incident = await incidentFor(req.params.incidentId);
+  const sequence = z.coerce.number().int().positive().parse(req.params.sequence);
+  const leg = incident.legs.find((item) => item.sequence === sequence);
+  const entry = incident.settlement?.ledger.find((item) => item.legSequence === sequence);
+  if (!leg || !entry) throw new ApiError('RESOURCE_NOT_FOUND', 'Recovery settlement leg was not found.');
+  if (leg.state !== 'COMPLETED') throw fail('A leg cannot be financially reconciled before its completion is recorded.');
+  if (entry.earnedCompensation != null) {
+    if (entry.verifiedDistanceKm === body.completedDistanceKm && entry.evidenceUrl === body.evidenceUrl) return ok(res, { incidentId: incident._id, leg: entry, idempotentReplay: true });
+    throw fail('This leg already has verified completion facts; create an operations correction record instead of overwriting it.');
+  }
+  const vehicle = await Vehicle.findById(leg.vehicleId);
+  if (!vehicle) throw fail('The recovery vehicle pricing record is unavailable.');
+  const actualCost = routeCost(body.completedDistanceKm, vehicle.ratePerKm);
+  const earnedCompensation = transporterEarning(actualCost);
+  const update = await RecoveryIncident.updateOne({
+    _id: incident._id,
+    legs: { $elemMatch: { sequence, state: 'COMPLETED' } },
+    settlement: { $exists: true },
+    'settlement.ledger': { $elemMatch: { legSequence: sequence, earnedCompensation: null } },
+  }, { $set: {
+    'settlement.status': 'BLOCKED_REQUIRES_OPERATIONS',
+    'settlement.ledger.$[entry].quotedCost': actualCost,
+    'settlement.ledger.$[entry].expectedCompensation': earnedCompensation,
+    'settlement.ledger.$[entry].earnedCompensation': earnedCompensation,
+    'settlement.ledger.$[entry].verifiedDistanceKm': body.completedDistanceKm,
+    'settlement.ledger.$[entry].evidenceUrl': body.evidenceUrl,
+    'settlement.ledger.$[entry].verifiedBy': (req as any).userId,
+    'settlement.ledger.$[entry].status': 'BLOCKED_REQUIRES_OPERATIONS',
+    'settlement.ledger.$[entry].lastError': 'Leg earnings are reconciled; payment is held for provider-compatible per-leg operations settlement.',
+  } }, { arrayFilters: [{ 'entry.legSequence': sequence, 'entry.earnedCompensation': null }] });
+  const committed = await RecoveryIncident.findById(incident._id);
+  const committedEntry = committed?.settlement?.ledger.find((item) => item.legSequence === sequence);
+  if (!update.modifiedCount) {
+    if (committedEntry?.verifiedDistanceKm === body.completedDistanceKm && committedEntry.evidenceUrl === body.evidenceUrl) {
+      return ok(res, { incidentId: incident._id, leg: committedEntry, idempotentReplay: true });
+    }
+    throw fail('Completion facts changed concurrently; review the current settlement entry before retrying.');
+  }
+  ok(res, { incidentId: incident._id, leg: committedEntry, idempotentReplay: false }, 201);
+}));
+
 recoveryRouter.get('/settlements/pending', requireAdmin, asyncHandler(async (_req, res) => {
-  const rows = await RecoveryIncident.find({ 'settlement.status': { $in: ['PENDING_OPERATIONS_REVIEW', 'BLOCKED_PAYOUT_CAPABILITY'] } }).sort({ updatedAt: -1 });
-  ok(res, rows.map(row => ({ incidentId: String(row._id), tripId: String(row.tripId), status: row.settlement?.status, ledger: row.settlement?.ledger ?? [], note: 'Per-leg transfers are held: the current shipment payment supports one transporter recipient only.' })));
+  const rows = await RecoveryIncident.find({ 'settlement.status': { $in: ['PENDING_OPERATIONS_REVIEW', 'PENDING', 'RETRYABLE', 'BLOCKED_REQUIRES_OPERATIONS', 'BLOCKED_PAYOUT_CAPABILITY'] } }).sort({ updatedAt: -1 });
+  ok(res, rows.map(row => ({ incidentId: String(row._id), tripId: String(row.tripId), status: row.settlement?.status, ledger: row.settlement?.ledger ?? [], note: 'Leg estimates and verified earnings are separate. Settlement remains blocked pending an idempotent per-leg transfer and provider reconciliation.' })));
 }));

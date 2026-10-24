@@ -48,6 +48,9 @@ npm install
 
 # 2. configuration
 cp .env.example .env        # then fill in what you have — see "Running without keys"
+# For local Fresh demo only, set both flags below in .env:
+# FRESH_DEMO_DATA=true
+# EXPO_PUBLIC_FRESH_DEMO_DATA=true
 
 # 3. database (local option)
 podman run -d --name kisanpool-mongo -p 27017:27017 mongo:7 --replSet rs0
@@ -57,7 +60,6 @@ podman exec kisanpool-mongo mongosh --quiet --eval \
 
 # 4. demo data
 npm run seed
-npm run seed:fresh          # fresh snapshots, unverified sample quote, outcome fixture
 
 # 5. backend
 npm run dev:server          # http://localhost:4000
@@ -77,6 +79,12 @@ For Expo LAN development, leave `EXPO_PUBLIC_API_URL` and
 Expo/Metro, so phones on a different developer network do not inherit a stale LAN IP.
 Set these optional variables only when targeting a fixed remote backend; Expo inlines
 `EXPO_PUBLIC_*` values into the JavaScript bundle.
+
+With `FRESH_DEMO_DATA=true` set in `.env`, sign in as farmer `9000000001`, open Fresh
+Produce, then choose **Open synthetic comparison demo**. Its four views use deterministic
+illustrative prices, acceptance, receiving hours, route times and quotes. They are labelled
+simulated and non-bookable, and do not represent current market conditions. No `seed:fresh`
+command is needed for this local simulation.
 
 If Expo Go reports an SDK mismatch, use the Android Expo Go build for this app's SDK:
 [SDK 54 Expo Go](https://expo.dev/go?device=true&platform=android&sdkVersion=54).
@@ -169,24 +177,26 @@ ln -sf "$PWD/bin/killport" ~/.local/bin/killport
 ## Tests
 
 ```bash
-npm run seed && npm run dev:server     # in one terminal
-npm test                                # in another
+npm test                                # deterministic offline Fresh/cargo/price checks
+# Optional current API integration suites; point only at an isolated replica-set DB:
+KISANPOOL_RUN_INTEGRATION=1 MONGODB_URI='mongodb://.../kisanpool_test?replicaSet=rs0' npm test
 ```
 
-**The suites need Razorpay in demo mode** — leave `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET`
-blank for the server process you test against. With real keys the server correctly refuses
-the suite's synthetic signature (`PAYMENT_SIGNATURE_INVALID`), which is the security
-property working as designed: a valid signature cannot be produced without an actual
-payment. Everything else — matching, sockets, the AI contract — runs against real keys.
+The offline root test command never reseeds or mutates a database. Integration suites do not
+seed/reset their target; prepare the isolated database and server explicitly. Legacy suites
+that target removed pre-pooling endpoints and the old realtime contract are reported as skipped.
 
-73 checks across four suites, run against a live server:
+The local Fresh simulation compares four synthetic markets with distinct balanced, highest-net,
+fastest and closest winners. It does not call an official price feed, book transport or settle
+payment. The server read endpoint for live evidence reports unavailable/unknown until an operator
+has entered sourced, current catalogue, acceptance and price observations.
 
 | Suite | Covers |
 |---|---|
-| `01_core_flow.py` | Auth, the KYC gate, matching and ranking, the 60/40 split, accept → payment → booking, status transitions, cancellation policy, auth boundaries, webhook signature |
-| `02_concurrency_payouts.py` | Two concurrent accept-and-pay attempts on one vehicle, the loser's automatic refund, cancellation refund minus the configured fee, proof of delivery, automatic payout, rating rollup |
-| `03_realtime.mjs` | Socket handshake auth, room authorisation, `match:new`, `payment:captured`, `trip:status`, live location with ETA, chat delivery and history |
-| `04_servo_ai.py` | The six-tool contract, spoken confirmation before state changes, ambiguity producing questions, checkout handoff without payment, identity from the JWT |
+| `tests/fresh-demo-scenario.test.ts` | Four distinct synthetic Fresh comparison winners and transparent numeric estimates; simulation is non-bookable |
+| `tests/market-data.test.ts` | Canonical market model registration, provenance, unit normalization, stale and simulated price eligibility |
+| `tests/cargo-ledger.test.ts` | Quantity conservation, same-version approval, reroute allocation and idempotency helpers |
+| `tests/05_pooled_flow.py`–`tests/12_resilience.py` | Existing current pooling and resilience integration suites, opt-in with an isolated DB and a separately started server |
 
 Typechecking:
 

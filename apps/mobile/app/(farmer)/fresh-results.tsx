@@ -7,6 +7,7 @@ import { Banner, Button, Card, Chip, Field, Header, Loading, Screen, Txt } from 
 import { ErrorView } from '../../components/ErrorView';
 import { TripMap } from '../../components/TripMap';
 import { colors, space } from '../../theme';
+const LOCAL_DEMO_ID = 'local-synthetic-fresh-v1';
 
 const RECOMMENDATION_SLOTS = [
   ['bestBalanced', 'Best balanced'],
@@ -21,14 +22,16 @@ function RecommendationSummary({ snapshot, onSelect, busy }: { snapshot: FreshRe
     <>
       <Txt variant="headlineMd">Recommendation views</Txt>
       {RECOMMENDATION_SLOTS.map(([key, label]) => {
-        const value = recommendations?.[key];
+      const value = recommendations?.[key] as { marketName?: string; fullyEligible?: boolean; explanation?: string; financials?: { netProceedsINR?: { expected?: number } }; route?: { distanceKm?: number; durationMinutes?: number }; transport?: { farmerPayableINR?: number } } | null | undefined;
         return (
           <Card key={key} style={{ marginTop: space.sm }}>
             <Txt variant="labelLg">{label}</Txt>
             {value ? (
               <>
-                <Txt variant="bodyMd" color={colors.onSurfaceVariant}>A candidate is available in this category. Review the option details and data warnings below.</Txt>
-                <Button label="Continue with this destination" loading={busy} onPress={() => onSelect(key)} style={{ marginTop: space.sm }} />
+                <Txt variant="bodyMd" color={colors.onSurfaceVariant}>{value.marketName ?? 'Market option'}{value.route ? ` · ${value.route.distanceKm?.toFixed(1)} km · ${Math.round(value.route.durationMinutes ?? 0)} min` : ''}</Txt>
+                {value.financials ? <Txt variant="bodyMd">Estimated net proceeds ₹{Math.round(value.financials.netProceedsINR?.expected ?? 0)}{value.transport?.farmerPayableINR != null ? ` · transport ₹${Math.round(value.transport.farmerPayableINR)}` : ''}</Txt> : null}
+                {value.explanation ? <Txt variant="bodyMd" color={colors.onSurfaceVariant}>{value.explanation}</Txt> : null}
+                {value.fullyEligible ? <Button label="Continue with this destination" loading={busy} onPress={() => onSelect(key)} style={{ marginTop: space.sm }} /> : <Txt variant="bodyMd" color={colors.onSurfaceVariant}>Preview only. Missing verified price, acceptance, receiving hours, or supported sale quantity; selection is disabled.</Txt>}
               </>
             ) : (
               <Txt variant="bodyMd" color={colors.onSurfaceVariant}>Unavailable: current price, market acceptance, and supported sale quantity are not all verified.</Txt>
@@ -57,7 +60,7 @@ export default function FreshResults() {
   const result = useLoader<FreshRecommendationSnapshot>(
     useCallback(async () => {
       if (!id) throw new Error('Recommendation ID is missing.');
-      return api.getFreshRecommendation(id);
+      return id === LOCAL_DEMO_ID ? api.freshDemoSnapshot() : api.getFreshRecommendation(id);
     }, [id]),
   );
   const snapshot = result.data;
@@ -128,6 +131,7 @@ export default function FreshResults() {
     <Screen onRefresh={() => void result.refresh()} refreshing={result.refreshing}>
       <Header title="Market comparison" subtitle={`Saved ${submittedAt}`} onBack={() => router.back()} />
       <Banner tone={snapshot.status === 'READY' ? 'info' : 'warning'} style={{ marginBottom: space.md }}>
+        {snapshot.demoScenarioKey ? <Txt variant="labelLg">LOCAL DEMO · unverified synthetic/reference data</Txt> : null}
         <Txt variant="labelLg">{snapshot.status === 'READY' ? 'Some options can be compared' : 'No verified feasible market yet'}</Txt>
         <Txt variant="bodyMd">The comparison is a saved snapshot. Refreshing this screen reloads the same result.</Txt>
       </Banner>
@@ -155,20 +159,24 @@ export default function FreshResults() {
             <Txt variant="labelLg" style={{ flex: 1 }}>{option.marketName}</Txt>
             <Txt variant="labelSm" color={colors.onSurfaceVariant}>{option.distanceFromPickupKm.toFixed(1)} km</Txt>
           </View>
-          <Txt variant="bodyMd" color={colors.onSurfaceVariant}>Market acceptance: unverified · Live price: unavailable</Txt>
+          {snapshot.demoScenarioKey ? <Txt variant="bodyMd" color={colors.onSurfaceVariant}>SIMULATION · crop acceptance and receiving hours are synthetic: {option.simulation?.receivingHours ?? 'fixture values'}</Txt> : <Txt variant="bodyMd" color={colors.onSurfaceVariant}>Market acceptance: {option.marketAcceptance === true ? 'operations verified' : option.marketAcceptance === false ? 'not accepted' : 'unknown'} · price: {option.price ? `${option.price.status}${option.price.modalINRPerKg != null ? ` · modal ₹${option.price.modalINRPerKg}/kg` : ''}${option.price.sourceName ? ` · ${option.price.sourceName}` : ''}` : 'unavailable'}</Txt>}
+          {snapshot.demoScenarioKey && option.price ? <Txt variant="bodyMd" color={colors.onSurfaceVariant}>SIMULATED price ₹{option.price.minINRPerKg}–{option.price.maxINRPerKg} (modal ₹{option.price.modalINRPerKg})/{option.simulation?.priceUnit ?? 'kg'} · {option.simulation?.provenance ?? 'synthetic fixture'}</Txt> : null}
           {option.route ? (
             <Txt variant="bodyMd" color={colors.onSurfaceVariant}>
-              Route estimate: {option.route.distanceKm.toFixed(1)} km · {Math.round(option.route.durationMinutes)} min · {option.route.estimateSource}
+              {snapshot.demoScenarioKey ? 'SIMULATED route' : 'Route estimate'}: {option.route.distanceKm.toFixed(1)} km · {Math.round(option.route.durationMinutes)} min · {option.route.estimateSource}
             </Txt>
           ) : <Txt variant="bodyMd" color={colors.onSurfaceVariant}>Route estimate unavailable.</Txt>}
           {option.transport.available ? (
             <Txt variant="bodyMd" color={colors.onSurfaceVariant}>
-              Transport preview available{option.transport.farmerPayableINR != null ? ` · estimated farmer payable ₹${Math.round(option.transport.farmerPayableINR)}` : ''}. This is not a booking.
+            {snapshot.demoScenarioKey ? 'SIMULATED transport quote' : 'Transport preview available'}{option.transport.farmerPayableINR != null ? ` · farmer payable ₹${Math.round(option.transport.farmerPayableINR)}` : ''}. This is not a booking.
             </Txt>
           ) : <Txt variant="bodyMd" color={colors.onSurfaceVariant}>No available transport preview for this candidate.</Txt>}
           <Txt variant="bodyMd" color={colors.onSurfaceVariant}>
             Freshness: {option.freshness.status === 'ESTIMATED' && option.freshness.score != null ? `${option.freshness.band ?? 'Estimated'} (${option.freshness.score}/100)` : 'insufficient data'} · shelf life: not estimated
           </Txt>
+          {snapshot.demoScenarioKey ? <Txt variant="bodyMd" color={colors.onSurfaceVariant}>SIMULATED quantity: {option.expectedSaleableKg} kg of {snapshot.input.quantityKg} kg · gross ₹{option.financials?.grossRevenueINR.expected} · known costs ₹{option.financials?.totalKnownCostsINR} · estimated net ₹{option.financials?.netProceedsINR.expected}</Txt> : null}
+          {snapshot.demoScenarioKey && option.simulation ? <Txt variant="labelSm" color={colors.onSurfaceVariant}>{option.simulation.saleableAssumption} {option.simulation.costAssumption}</Txt> : null}
+          {option.unknownCostItems.map((item) => <Txt key={item} variant="labelSm" color={colors.onSurfaceVariant}>Unknown cost: {item}</Txt>)}
           {option.warnings.map((warning) => <Txt key={warning} variant="labelSm" color={colors.onSurfaceVariant}>{warning.replaceAll('_', ' ').toLowerCase()}</Txt>)}
         </Card>
       ))}

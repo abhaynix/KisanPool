@@ -89,7 +89,7 @@ const endToEndMinutes = (option: FreshRankingCandidate): number =>
   (option.route.marketUnloadingBufferMinutes ?? 0);
 const isPriceEligible = (candidate: FreshRankingCandidate): boolean =>
   candidate.price.status === 'VALID' &&
-  candidate.price.sourceType !== 'SIMULATED' &&
+  ['OFFICIAL', 'CONFIRMED_BUYER'].includes(candidate.price.sourceType) &&
   candidate.price.modalINRPerKg != null &&
   candidate.price.minINRPerKg != null &&
   candidate.price.maxINRPerKg != null;

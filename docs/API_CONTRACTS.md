@@ -92,8 +92,9 @@ Every response — success or failure — uses one shape:
 | POST | `/recovery/incidents/:id/handover` | `{ location, at, completedDistanceKm, shipments, evidenceUrls }` | Sequential outgoing/incoming custody acknowledgements; mismatch escalates, matching cargo creates the next linked leg |
 | GET | `/recovery/incidents/:id` | — | Incident for a trip party; farmer response is limited to their shipment and omits settlement ledger |
 | GET | `/recovery/settlements/pending` | — | Operator-only per-leg quote/compensation ledger held for payout reconciliation |
+| PATCH | `/recovery/settlements/:incidentId/legs/:sequence/verify-completion` | `{ completedDistanceKm, evidenceUrl }` | Admin records immutable, idempotent completion facts for a completed leg; compensation is calculated with existing route pricing and remains blocked pending provider reconciliation |
 
-Recovery keeps the original `Trip`, shipments, prices and payments intact. Completed-leg compensation uses the existing route-cost/commission functions; farmer charge adjustments remain zero unless a separate approved workflow exists. Per-leg amounts remain on hold because the current one-payment/one-transporter payout contract cannot safely pay two drivers for one shipment. No replacement flow creates an extra payment or transfer.
+Recovery keeps the original `Trip`, shipments, prices and payments intact. Completed-leg compensation uses the existing route-cost/commission functions; farmer charge adjustments remain zero unless a separate approved workflow exists. The original payment model and webhook path still have one transfer recipient per payment, so per-leg earnings remain blocked pending a reconciled multi-transfer ledger. No replacement flow creates an extra farmer charge or claims an unconfirmed transfer.
 
 ### Cargo partial sale and rerouting (`modules/cargo`)
 
@@ -348,6 +349,8 @@ Predictions are **advisory**. They are computed read-only from real application 
 | Method | Path | Body | Returns |
 |---|---|---|---|
 | GET | `/fresh/crops` | — | Farmer-owned supported crop catalogue |
+| GET | `/fresh/markets?cropKey=tomato` | Crop key | Persisted market catalogue plus latest price and crop-acceptance evidence; missing and stale facts are explicit |
+| GET | `/fresh/demo-snapshot` | — | Local-only deterministic synthetic comparison; 404 when `FRESH_DEMO_DATA` is disabled; never selectable/bookable |
 | POST | `/fresh/recommendations` | Crop, harvest, storage, pickup and delivery window | Immutable recommendation snapshot |
 | GET | `/fresh/recommendations/:id` | — | Owner-scoped saved snapshot; no recalculation |
 | POST | `/fresh/recommendations/:id/select` | `{ recommendationType, confirmedFarmerPayableINR? }` | Creates one linked ordinary `TransportRequest` only for a current fully eligible option; changed quotes require reconfirmation; existing offers/booking/payment remain authoritative |
@@ -356,3 +359,13 @@ Predictions are **advisory**. They are computed read-only from real application 
 | GET | `/fresh/recommendations/:id/buyer-offers` | — | Owner-scoped quotes for that snapshot |
 
 Fresh-involved shared trips retain normal per-farmer shipment and allocation behavior and require compatible crop type and destination. Shareable Fresh summaries omit pickup coordinates and contact details.
+
+### Admin market evidence
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| PUT | `/admin/markets/:code` | Name, coordinates and catalogue source | Upserted canonical market record |
+| POST | `/admin/markets/:code/acceptance` | Crop, acceptance, receiving hours, source and observation/expiry | Operations-verified acceptance observation |
+| POST | `/admin/markets/:code/prices` | Raw min/modal/max, source unit/type/name/URL and observed time | Persisted normalized observation with computed age status |
+
+All three endpoints require an admin-claim token. These are operator evidence-entry endpoints, not a claim of automated provider ingestion. `/fresh/markets` recomputes price age on read; only current non-simulated price evidence and non-expired operations-verified acceptance are returned as usable facts. Receiving-hour feasibility remains unknown until a supported schedule evaluator exists.
