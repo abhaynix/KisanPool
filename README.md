@@ -57,6 +57,7 @@ podman exec kisanpool-mongo mongosh --quiet --eval \
 
 # 4. demo data
 npm run seed
+npm run seed:fresh          # fresh snapshots, unverified sample quote, outcome fixture
 
 # 5. backend
 npm run dev:server          # http://localhost:4000

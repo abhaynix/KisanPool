@@ -4,7 +4,7 @@
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import {
   Banner,
   Button,
@@ -42,20 +42,24 @@ function Choice({
   label,
   selected,
   onPress,
+  disabled = false,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
+  disabled?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected }}
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.choice,
         selected && styles.choiceSelected,
+        disabled && { opacity: 0.5 },
         pressed && { opacity: 0.75 },
       ]}
     >
@@ -114,17 +118,23 @@ function OptionCard({
   market,
   details,
   featured = false,
+  selected = false,
+  onSelect,
+  onDetails,
 }: {
   label: string;
   market: string;
   details: string;
   featured?: boolean;
+  selected?: boolean;
+  onSelect: () => void;
+  onDetails: () => void;
 }) {
   return (
-    <Card style={featured ? styles.featuredCard : undefined}>
+    <Card style={selected ? styles.featuredCard : undefined}>
       <View style={styles.rowBetween}>
         <Txt variant="labelLg" style={{ flex: 1 }}>{label}</Txt>
-        {featured ? <StatusBadge status="CONFIRMED" label="Balanced pick" /> : null}
+        {featured ? <StatusBadge status="CONFIRMED" label="Balanced pick" /> : selected ? <StatusBadge status="PENDING" label="Selected for review" /> : null}
       </View>
       <Txt variant="headlineMd" style={{ marginTop: space.sm }}>{market}</Txt>
       <Txt variant="bodyMd" color={colors.onSurfaceVariant} style={{ marginTop: space.xs }}>
@@ -133,6 +143,10 @@ function OptionCard({
       <Txt variant="labelSm" color={colors.statusWarning} style={{ marginTop: space.sm }}>
         SIMULATED ESTIMATE · NOT A BUYER OFFER
       </Txt>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.xs, marginTop: space.sm }}>
+        <Button label="Select option" variant="secondary" onPress={onSelect} />
+        <Button label="Location details" variant="ghost" onPress={onDetails} />
+      </View>
     </Card>
   );
 }
@@ -147,12 +161,29 @@ export default function FreshPrototype() {
   const [reported, setReported] = useState(false);
   const [farmerHandover, setFarmerHandover] = useState(false);
   const [driverHandover, setDriverHandover] = useState(false);
+  const [handoverComplete, setHandoverComplete] = useState(false);
   const [saleQuantity, setSaleQuantity] = useState('180');
   const [decision, setDecision] = useState('REROUTE_TO_MARKET');
   const [farmerApproved, setFarmerApproved] = useState(false);
   const [transporterApproved, setTransporterApproved] = useState(false);
+  const [selectedMarket, setSelectedMarket] = useState('Pune Market Yard');
+  const [marketView, setMarketView] = useState<'List' | 'Map'>('List');
+  const [pickupIndex, setPickupIndex] = useState(0);
+  const [incidentType, setIncidentType] = useState('Vehicle breakdown');
+  const [incidentDescription, setIncidentDescription] = useState('');
+  const [dispositionMessage, setDispositionMessage] = useState('');
+  const [reroutedKg, setReroutedKg] = useState(0);
+  const [cargoMarket, setCargoMarket] = useState('Pune');
 
-  const remaining = Math.max(0, (Number(quantity) || 0) - (Number(saleQuantity) || 0));
+  const marketOptions = [
+    { name: 'Pune Market Yard', label: 'Best balanced', details: '₹18,400 estimated net · 3h 20m · ₹2,100 transport · balanced score 82/100', coords: '18.4805, 73.8683' },
+    { name: 'Vashi APMC', label: 'Highest net proceeds', details: '₹19,050 estimated net · 5h 10m · ₹3,500 transport', coords: '19.0662, 73.0021' },
+    { name: 'Lasalgaon APMC', label: 'Fastest feasible', details: '₹17,800 estimated net · 1h 45m · ₹950 transport', coords: '20.1417, 74.2389' },
+    { name: 'Ahmednagar APMC', label: 'Closest suitable', details: 'Reference location · estimated route and buyer data', coords: '19.0948, 74.7480' },
+  ];
+  const pickupOptions = ['Nashik, Maharashtra', 'Lasalgaon, Maharashtra', 'Sinnar, Maharashtra', 'Yeola, Maharashtra'];
+
+  const remaining = Math.max(0, (Number(quantity) || 0) - (Number(saleQuantity) || 0) - reroutedKg);
   const bothApproved = farmerApproved && transporterApproved;
   const chooseDecision = (next: string) => {
     setDecision(next);
@@ -209,7 +240,7 @@ export default function FreshPrototype() {
               <Txt variant="labelLg" style={{ marginBottom: space.sm }}>Crop</Txt>
               <View style={styles.wrapChoices}>
                 <Choice label="Tomato" selected onPress={() => {}} />
-                <Choice label="Other crops · not configured" selected={false} onPress={() => {}} />
+                <Choice label="Other crops · not configured" selected={false} disabled onPress={() => {}} />
               </View>
               <Field
                 label="Quantity (kg)"
@@ -237,14 +268,14 @@ export default function FreshPrototype() {
                 ))}
               </View>
               <Txt variant="labelLg" color={colors.onSurfaceVariant} style={styles.labelGap}>Pickup location</Txt>
-              <View style={styles.locationBox}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Change simulated pickup location" onPress={() => setPickupIndex((pickupIndex + 1) % pickupOptions.length)} style={styles.locationBox}>
                 <MaterialIcons name="location-on" size={20} color={colors.onSurfaceVariant} />
                 <View style={{ flex: 1 }}>
-                  <Txt variant="labelLg">Nashik, Maharashtra</Txt>
-                  <Txt variant="labelSm" color={colors.onSurfaceVariant}>Simulated pickup · editable in the real flow</Txt>
+                  <Txt variant="labelLg">{pickupOptions[pickupIndex]}</Txt>
+                  <Txt variant="labelSm" color={colors.onSurfaceVariant}>Tap to cycle simulated reference pickup</Txt>
                 </View>
                 <MaterialIcons name="edit" size={18} color={colors.onSurfaceVariant} />
-              </View>
+              </Pressable>
               <Txt variant="labelLg" color={colors.onSurfaceVariant} style={styles.labelGap}>When would you like it delivered?</Txt>
               <View style={styles.wrapChoices}>
                 {DELIVERY_WINDOWS.map((item) => (
@@ -270,25 +301,19 @@ export default function FreshPrototype() {
                 Indicative sample data only. It is not a confirmed buyer offer or guaranteed return.
               </Txt>
             </Banner>
-            <OptionCard
-              featured
-              label="Best Balanced Fresh Option"
-              market="Pune Market Yard"
-              details="₹18,400 estimated net · 3h 20m · ₹2,100 transport · balanced score 82/100"
-            />
-            <View style={styles.twoCol}>
-              <View style={styles.col}>
-                <OptionCard label="Highest Net Proceeds" market="Vashi APMC" details="₹19,050 net · 5h 10m · ₹3,500 transport" />
-              </View>
-              <View style={styles.col}>
-                <OptionCard label="Fastest Feasible" market="Lasalgaon Mandi" details="₹17,800 net · 1h 45m · ₹950 transport" />
-              </View>
+            <View style={styles.wrapChoices}>
+              {(['List', 'Map'] as const).map(view => <Choice key={view} label={`${view} view`} selected={marketView === view} onPress={() => setMarketView(view)} />)}
             </View>
-            <OptionCard label="Closest Suitable" market="Lasalgaon Mandi" details="68 km driving route · 1h 45m estimated" />
+            {marketView === 'Map' ? <Card><Txt variant="labelLg">Reference locations · schematic</Txt>{marketOptions.map(m => <Txt key={m.name} variant="bodyMd" color={colors.onSurfaceVariant}>{m.name} · {m.coords}</Txt>)}</Card> : null}
+            {marketOptions.map((option, index) => (
+              <OptionCard key={option.name} featured={index === 0} selected={selectedMarket === option.name} label={option.label} market={option.name} details={option.details}
+                onSelect={() => setSelectedMarket(option.name)}
+                onDetails={() => Alert.alert(option.name, `${option.coords} · Maharashtra · simulated location and quote. No live market or buyer verification.`)} />
+            ))}
             <Card>
               <Txt variant="labelLg">Why this option?</Txt>
               <Txt variant="bodyMd" color={colors.onSurfaceVariant} style={{ marginTop: space.sm }}>
-                The example balances estimated money after costs with delivery suitability. Actual price, route, vehicle availability and crop quality can differ.
+                {selectedMarket} is selected. The example compares estimated proceeds with delivery fit. Actual price, route, vehicle availability and crop quality can differ.
               </Txt>
               <View style={styles.scoreGrid}>
                 <Score label="Net proceeds" score="78" />
@@ -298,7 +323,9 @@ export default function FreshPrototype() {
               <Txt variant="labelSm" color={colors.statusWarning} style={{ marginTop: space.sm }}>
                 Tomato freshness model: unavailable in this prototype. No shelf-life estimate shown.
               </Txt>
+              <Txt variant="labelSm" color={colors.onSurfaceVariant} style={{ marginTop: space.xs }}>Pickup reference: {pickupOptions[pickupIndex]} · chosen destination: {selectedMarket}</Txt>
             </Card>
+            <Button label="Share safe comparison summary" variant="secondary" icon="share" onPress={() => void Share.share({ title: 'KisanPool Fresh prototype', message: `${quantity} kg tomatoes · ${selectedMarket} · simulated estimates only.` })} />
             <Button label="Back to crop details" variant="secondary" icon="arrow-back" onPress={() => setFlow('produce')} />
           </View>
         ) : null}
@@ -315,12 +342,10 @@ export default function FreshPrototype() {
                 Example trip · 300 kg tomatoes · 42 km from pickup
               </Txt>
               <View style={styles.wrapChoices}>
-                <Choice label="Vehicle breakdown" selected onPress={() => {}} />
-                <Choice label="Road blocked" selected={false} onPress={() => {}} />
-                <Choice label="Safety concern" selected={false} onPress={() => {}} />
+                {['Vehicle breakdown', 'Road blocked', 'Safety concern'].map(item => <Choice key={item} label={item} selected={incidentType === item} onPress={() => setIncidentType(item)} />)}
               </View>
-              <Field label="What happened?" placeholder="Describe the issue" multiline numberOfLines={3} />
-              <Button label={reported ? 'Demo incident recorded' : 'Record simulated incident'} variant="primary" onPress={() => setReported(true)} />
+              <Field label="What happened?" placeholder="Describe the issue" value={incidentDescription} onChangeText={setIncidentDescription} multiline numberOfLines={3} />
+              <Button label={reported ? 'Demo incident recorded' : 'Record simulated incident'} variant="primary" disabled={!incidentDescription.trim()} onPress={() => { setReported(true); setFarmerHandover(false); setDriverHandover(false); setHandoverComplete(false); }} />
               <Txt variant="labelSm" color={colors.statusWarning} style={{ marginTop: space.sm }}>
                 Demo action only · does not contact anyone or update a trip.
               </Txt>
@@ -334,19 +359,25 @@ export default function FreshPrototype() {
               <Txt variant="bodyMd" color={colors.onSurfaceVariant} style={{ marginTop: space.sm }}>
                 Verified mini truck · 800 kg capacity · estimated arrival in 35 min
               </Txt>
+              {!reported ? <Txt variant="labelSm" color={colors.statusWarning}>Record an incident before confirming a replacement handover.</Txt> : null}
               <View style={styles.metricBand}>
                 <Metric label="Revised ETA" value="2:40 PM" />
                 <Metric label="Remaining leg quote" value="₹740" />
                 <Metric label="Cargo at handover" value="300 kg · good" />
               </View>
               <Txt variant="labelLg" style={{ marginTop: space.md }}>Handover acknowledgements</Txt>
-              <ConfirmRow label="Farmer confirms quantity and condition" value={farmerHandover} onChange={setFarmerHandover} />
-              <ConfirmRow label="Replacement driver confirms custody" value={driverHandover} onChange={setDriverHandover} />
-              <Banner tone={farmerHandover && driverHandover ? 'primary' : 'warning'} style={{ marginTop: space.sm }}>
+              <ConfirmRow label="Farmer confirms quantity and condition" value={farmerHandover} disabled={!reported || handoverComplete} onChange={value => setFarmerHandover(value)} />
+              <ConfirmRow label="Replacement driver confirms custody" value={driverHandover} disabled={!reported || handoverComplete} onChange={value => setDriverHandover(value)} />
+              <Button label={handoverComplete ? 'Handover recorded' : 'Confirm simulated handover'} variant="primary" disabled={!reported || !farmerHandover || !driverHandover || handoverComplete} onPress={() => setHandoverComplete(true)} />
+              <Banner tone={handoverComplete ? 'primary' : 'warning'} style={{ marginTop: space.sm }}>
                 <Txt variant="bodyMd">
-                  {farmerHandover && driverHandover
-                    ? 'Both simulated acknowledgements match. No live handover was recorded.'
-                    : 'Recovery status: waiting for verified replacement and both custody confirmations.'}
+                  {handoverComplete
+                    ? 'Both simulated acknowledgements match. Handover recorded in this screen only.'
+                    : !reported
+                      ? 'Record an incident before confirming a replacement handover.'
+                      : farmerHandover && driverHandover
+                        ? 'Both parties acknowledged. Confirm the handover to finish this demo step.'
+                        : 'Recovery status: waiting for both custody confirmations.'}
                 </Txt>
               </Banner>
             </Card>
@@ -358,18 +389,19 @@ export default function FreshPrototype() {
             <SectionTitle title="Sell here or reroute?" detail="Compare options for the remaining cargo after a partial sale." />
             <Card>
               <View style={styles.rowBetween}>
-                <Txt variant="headlineMd">Current market · Pune</Txt>
+                <Txt variant="headlineMd">Current market · {cargoMarket}</Txt>
                 <StatusBadge status="IN_TRANSIT" label="At market" />
               </View>
               <View style={styles.metricBand}>
-                <Metric label="Received" value="480 kg" />
-                <Metric label="Already sold" value="180 kg" />
+                <Metric label="Received" value={`${Number(quantity) || 0} kg`} />
+                <Metric label="Already sold" value={`${Number(saleQuantity) || 0} kg`} />
                 <Metric label="Remaining" value={`${remaining} kg`} />
+                <Metric label="In transit" value={`${reroutedKg} kg`} />
               </View>
               <Field
                 label="Quantity sold here (kg) · simulated"
                 value={saleQuantity}
-                onChangeText={setSaleQuantity}
+                onChangeText={value => { setSaleQuantity(value.replace(/[^0-9.]/g, '')); setFarmerApproved(false); setTransporterApproved(false); setDispositionMessage(''); }}
                 keyboardType="numeric"
                 accessibilityLabel="Simulated quantity sold in kilograms"
               />
@@ -403,6 +435,15 @@ export default function FreshPrototype() {
               </Txt>
               <ConfirmRow label="Farmer approves commercial choice" value={farmerApproved} onChange={setFarmerApproved} />
               <ConfirmRow label="Transporter confirms route and quote" value={transporterApproved} onChange={setTransporterApproved} />
+              <Button label="Confirm simulated disposition" variant="primary" disabled={!bothApproved || remaining <= 0} onPress={() => {
+                const amount = remaining;
+                const action = decision === 'SELL_HERE' ? `Sold remaining ${amount} kg at current market.` : decision === 'REROUTE_TO_MARKET' ? `Dispatched remaining ${amount} kg on a simulated next leg to Vashi.` : `Escalated ${amount} kg to operations; cargo remains in custody.`;
+                setDispositionMessage(`${action} Both approvals cleared for the next decision.`);
+                if (decision === 'SELL_HERE') setSaleQuantity(String((Number(quantity) || 0) - reroutedKg));
+                if (decision === 'REROUTE_TO_MARKET') setReroutedKg(value => value + amount);
+                setFarmerApproved(false); setTransporterApproved(false);
+              }} />
+              {dispositionMessage ? <Txt variant="bodyMd" color={colors.primary} style={{ marginTop: space.sm }}>{dispositionMessage}</Txt> : null}
               <Banner tone={bothApproved ? 'primary' : 'warning'} style={{ marginTop: space.sm }}>
                 <Txt variant="bodyMd">
                   {bothApproved
@@ -414,6 +455,7 @@ export default function FreshPrototype() {
             <Txt variant="labelSm" color={colors.statusWarning}>
               All quantities, offers and quotes on this screen are simulated examples.
             </Txt>
+            {reroutedKg > 0 ? <Button label={`Simulate arrival at Vashi (${reroutedKg} kg)`} icon="where-to-vote" variant="secondary" onPress={() => { setCargoMarket('Vashi'); setReroutedKg(0); setDispositionMessage('Cargo received in the simulated example and is available for another decision.'); }} style={{ marginTop: space.sm }} /> : null}
           </View>
         ) : null}
 
@@ -446,13 +488,14 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ConfirmRow({ label, value, onChange }: { label: string; value: boolean; onChange: (value: boolean) => void }) {
+function ConfirmRow({ label, value, onChange, disabled = false }: { label: string; value: boolean; onChange: (value: boolean) => void; disabled?: boolean }) {
   return (
     <Pressable
       onPress={() => onChange(!value)}
       accessibilityRole="checkbox"
       accessibilityLabel={label}
       accessibilityState={{ checked: value }}
+      disabled={disabled}
       style={styles.confirmRow}
     >
       <MaterialIcons

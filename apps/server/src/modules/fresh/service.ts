@@ -195,6 +195,13 @@ export async function getFreshRecommendation(farmerId: string, recommendationId:
   return FreshRecommendation.findOne({ _id: recommendationId, farmerId }).lean();
 }
 
+/** Local seeded fixture lookup, scoped to the signed-in farmer. */
+export async function getFreshDemoRecommendation(farmerId: string) {
+  return FreshRecommendation.findOne({ farmerId, 'input.demoScenarioKey': 'fresh-demo-v1' })
+    .sort({ generatedAt: -1 })
+    .lean();
+}
+
 export async function selectFreshRecommendation(
   farmerId: string,
   recommendationId: string,

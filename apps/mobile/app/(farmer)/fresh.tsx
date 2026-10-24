@@ -9,6 +9,7 @@ import { Button, Card, Chip, Field, Header, Screen, Txt } from '../../components
 import { ErrorView } from '../../components/ErrorView';
 import { LocationPicker } from '../../components/LocationPicker';
 import { colors, space } from '../../theme';
+import { FRESH_DEMO_DATA_ENABLED } from '../../lib/featureFlags';
 
 const RIPENESS: FreshRecommendationInput['ripenessStage'][] = ['GREEN', 'TURNING', 'PINK', 'RED', 'UNKNOWN'];
 const STORAGE: FreshRecommendationInput['storageCondition'][] = ['SHADE', 'AMBIENT', 'COOL_STORAGE', 'UNKNOWN'];
@@ -46,6 +47,7 @@ export default function FreshProduceForm() {
   const [customDeadline, setCustomDeadline] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
+  const [demoBusy, setDemoBusy] = useState(false);
 
   useEffect(() => {
     void getUser().then((user) => {
@@ -91,6 +93,19 @@ export default function FreshProduceForm() {
     }
   };
 
+  const openDemoSnapshot = async () => {
+    setDemoBusy(true);
+    setError(undefined);
+    try {
+      const snapshot = await api.freshDemoSnapshot();
+      router.push(`/(farmer)/fresh-results?id=${encodeURIComponent(snapshot._id)}`);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setDemoBusy(false);
+    }
+  };
+
   return (
     <Screen footer={<Button label="Compare market options" loading={busy} disabled={!valid} onPress={() => void submit()} variant="primary" />}>
       <Header title="Fresh produce options" subtitle="Find a route for your harvested tomatoes" onBack={() => router.back()} />
@@ -123,6 +138,10 @@ export default function FreshProduceForm() {
         <Txt variant="labelSm" color={colors.onSurfaceVariant}>{pickup ? 'Tap to change the location' : 'Search, drop a pin, or use GPS'}</Txt>
       </Card>
       <LocationPicker visible={pickerOpen} onClose={() => setPickerOpen(false)} onPick={(point) => { setPickup(point); setPickupTouched(true); }} initial={pickup} title="Where are the tomatoes?" confirmLabel="Use this pickup" />
+
+      {FRESH_DEMO_DATA_ENABLED ? (
+        <Button label="Open seeded demo comparison" icon="science" variant="secondary" loading={demoBusy} onPress={() => void openDemoSnapshot()} style={{ marginBottom: space.md }} />
+      ) : null}
 
       <Txt variant="labelLg" color={colors.onSurfaceVariant} style={{ marginBottom: space.sm }}>Arrival timing</Txt>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.xs, marginBottom: space.md }}>

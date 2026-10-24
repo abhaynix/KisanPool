@@ -5,7 +5,8 @@ import { ApiError, ok } from '../../lib/envelope';
 import { asyncHandler } from '../../middleware/error';
 import { requireAuth, requireRole, type AuthedRequest } from '../../middleware/auth';
 import { requireWritable } from '../resilience/guard';
-import { createFreshRecommendation, getFreshCropCatalogue, getFreshRecommendation, selectFreshRecommendation, recordFreshDeliveryOutcome, createFreshBuyerOffer, listFreshBuyerOffers } from './service';
+import { config } from '../../config';
+import { createFreshRecommendation, getFreshCropCatalogue, getFreshRecommendation, getFreshDemoRecommendation, selectFreshRecommendation, recordFreshDeliveryOutcome, createFreshBuyerOffer, listFreshBuyerOffers } from './service';
 
 export const freshRouter = Router();
 
@@ -120,6 +121,18 @@ freshRouter.post(
     const input = freshRecommendationRequestSchema.parse(req.body);
     const result = await createFreshRecommendation(req.userId, input);
     ok(res, result, 201);
+  }),
+);
+
+freshRouter.get(
+  '/demo-snapshot',
+  requireAuth,
+  requireRole('FARMER'),
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    if (!config.freshDemoData) throw new ApiError('RESOURCE_NOT_FOUND', 'Fresh demo data is disabled.');
+    const snapshot = await getFreshDemoRecommendation(req.userId);
+    if (!snapshot) throw new ApiError('RESOURCE_NOT_FOUND', 'Run the Fresh demo seed first.');
+    ok(res, snapshot);
   }),
 );
 

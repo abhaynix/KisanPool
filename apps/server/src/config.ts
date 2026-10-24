@@ -130,4 +130,5 @@ export const config = {
   isProd,
   // Test-only switch: never permit unverified vehicles in production.
   skipDocumentVerification: !isProd && process.env.SKIP_DOCUMENT_VERIFICATION === 'true',
+  freshDemoData: !isProd && process.env.FRESH_DEMO_DATA === 'true',
 } as const;

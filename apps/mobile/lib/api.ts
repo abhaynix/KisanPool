@@ -410,6 +410,9 @@ export const api = {
   createFreshRecommendation: (input: FreshRecommendationInput) =>
     request<FreshRecommendationSnapshot>('/fresh/recommendations', { method: 'POST', body: input }),
 
+  freshDemoSnapshot: () =>
+    request<FreshRecommendationSnapshot>('/fresh/demo-snapshot'),
+
   getFreshRecommendation: (id: string) =>
     request<FreshRecommendationSnapshot>(`/fresh/recommendations/${encodeURIComponent(id)}`),
 
