@@ -5,6 +5,7 @@ interface DirectionsResult {
   distanceKm: number;
   durationMinutes: number;
   polyline: string | null;
+  source: 'GOOGLE' | 'STRAIGHT_LINE_ESTIMATE';
 }
 
 /** Cached per origin→destination pair so a live trip doesn't re-bill on every GPS tick. */
@@ -25,6 +26,7 @@ function fallback(origin: Point, destination: Point): DirectionsResult {
     distanceKm: Math.round(distanceKm * 10) / 10,
     durationMinutes: Math.round((distanceKm / AVERAGE_SPEED_KMH) * 60),
     polyline: null,
+    source: 'STRAIGHT_LINE_ESTIMATE',
   };
 }
 
@@ -67,6 +69,7 @@ export async function getDirections(origin: Point, destination: Point): Promise<
           distanceKm: Math.round(((leg.distance?.value ?? 0) / 1000) * 10) / 10,
           durationMinutes: Math.round((leg.duration?.value ?? 0) / 60),
           polyline: json.routes?.[0]?.overview_polyline?.points ?? null,
+          source: 'GOOGLE',
         };
       }
     } catch (err) {

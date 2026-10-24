@@ -265,6 +265,88 @@ async function quoteForJoining(
   };
 }
 
+/**
+ * Read-only Fresh quote preview. It uses the same trip allocation engine as a
+ * transporter claim, but never creates an offer/trip, writes a shipment, or
+ * changes vehicle capacity. Candidates without a verifiable current location
+ * are omitted because the farmer needs an honest pickup ETA.
+ */
+export async function previewLoadQuote(input: {
+  farmerId: string;
+  quantityKg: number;
+  pickup: { lat: number; lng: number };
+  destination: { lat: number; lng: number };
+}) {
+  if (!Number.isFinite(input.quantityKg) || input.quantityKg <= 0) {
+    throw new ApiError('VALIDATION_ERROR', 'Quantity must be greater than zero.');
+  }
+
+  const vehicles = await Vehicle.find({
+    status: 'AVAILABLE',
+    verificationStatus: 'VERIFIED',
+    capacityKg: { $gte: input.quantityKg },
+    availableCapacityKg: { $gte: input.quantityKg },
+    ownerId: { $ne: input.farmerId },
+  }).limit(50);
+
+  const candidates = [];
+  for (const vehicle of vehicles) {
+    if (!vehicle.currentLocation || vehicle.ratePerKm <= 0) continue;
+    const transporterId = String(vehicle.ownerId);
+    const activeTrip = await activeFormingTrip(transporterId);
+    if (activeTrip && String(activeTrip.vehicleId) !== String(vehicle._id)) continue;
+    if (activeTrip && !sameDestination(activeTrip, input.destination)) continue;
+
+    const pickupDistanceKm = await getDirections(
+      { lat: vehicle.currentLocation.lat as number, lng: vehicle.currentLocation.lng as number },
+      input.pickup,
+    );
+    const capacity = activeTrip ? await capacityOf(activeTrip) : null;
+    const availableKg = capacity?.availableKg ?? vehicle.capacityKg;
+    if (availableKg < input.quantityKg) continue;
+
+    const route = await getDirections(input.pickup, input.destination);
+    const quote = await quoteForJoining(
+      activeTrip,
+      {
+        requestId: `preview-${transporterId}`,
+        farmerId: input.farmerId,
+        quantityKg: input.quantityKg,
+        pickup: input.pickup,
+      },
+      input.destination,
+      route.distanceKm,
+      vehicle.ratePerKm,
+    );
+
+    candidates.push({
+      vehicleId: String(vehicle._id),
+      transporterId,
+      vehicleType: vehicle.vehicleType,
+      capacityKg: vehicle.capacityKg,
+      availableCapacityKg: availableKg,
+      routeDistanceKm: route.distanceKm,
+      routeDurationMinutes: route.durationMinutes,
+      vehicleToPickupDistanceKm: pickupDistanceKm.distanceKm,
+      vehicleToPickupEtaMinutes: pickupDistanceKm.durationMinutes,
+      routeSource: route.source,
+      farmerPayableINR: quote.quoted,
+      soloPriceINR: quote.solo,
+      tripId: activeTrip ? String(activeTrip._id) : null,
+    });
+  }
+
+  candidates.sort((a, b) =>
+    a.farmerPayableINR - b.farmerPayableINR ||
+    a.vehicleToPickupEtaMinutes - b.vehicleToPickupEtaMinutes,
+  );
+  return {
+    available: candidates.length > 0,
+    candidates,
+    reason: candidates.length ? null : 'NO_VEHICLE_AVAILABLE' as const,
+  };
+}
+
 export async function activeFormingTrip(transporterId: string) {
   return Trip.findOne({ transporterId, state: { $in: ['FORMING', 'EN_ROUTE'] } }).sort({
     createdAt: -1,

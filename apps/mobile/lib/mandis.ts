@@ -10,17 +10,23 @@
  * and the vehicle's rate; these bands are market guidance for choosing a mandi.
  */
 
+import { normalizeMarketPrice, type NormalizedMarketPrice } from '@kisanpool/shared';
+
 export type Category = 'Vegetables' | 'Fruits' | 'Grains' | 'Flowers';
 export type Demand = 'HIGH' | 'MEDIUM' | 'LOW';
 export type Trend = 'UP' | 'FLAT' | 'DOWN';
 
-export interface CommodityPrice {
+export interface CommodityPriceInput {
   crop: string;
   min: number;
   max: number;
   /** the price most lots actually clear at , what a farmer plans against */
   modal: number;
   trend: Trend;
+}
+
+export interface CommodityPrice extends CommodityPriceInput {
+  provenance: NormalizedMarketPrice;
 }
 
 export interface Mandi {
@@ -43,7 +49,7 @@ export interface Mandi {
   prices: CommodityPrice[];
 }
 
-export const MANDIS: Mandi[] = [
+const MANDI_REFERENCE_DATA: Array<Omit<Mandi, 'prices'> & { prices: CommodityPriceInput[] }> = [
   {
     id: 'lasalgaon',
     name: 'Lasalgaon Mandi',
@@ -225,6 +231,24 @@ export const MANDIS: Mandi[] = [
     ],
   },
 ];
+
+/** These bundled values are examples only; they are never eligible as live prices. */
+export const MANDIS: Mandi[] = MANDI_REFERENCE_DATA.map((mandi) => ({
+  ...mandi,
+  prices: mandi.prices.map((price) => ({
+    ...price,
+    provenance: normalizeMarketPrice({
+      sourceMinPrice: price.min,
+      sourceModalPrice: price.modal,
+      sourceMaxPrice: price.max,
+      sourcePriceUnit: 'INR_PER_QUINTAL',
+      sourceType: 'SIMULATED',
+      sourceName: 'KisanPool demo reference values',
+      observedAt: null,
+      fetchedAt: null,
+    }),
+  })),
+}));
 
 export const CATEGORIES: Array<'All' | Category> = [
   'All',

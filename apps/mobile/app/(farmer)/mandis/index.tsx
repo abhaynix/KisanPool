@@ -269,7 +269,7 @@ export default function MandiDiscovery() {
                 <View style={s.metricsRow}>
                   <View>
                     <Txt variant="labelSm" color={colors.onSurfaceVariant}>
-                      {price.crop} · modal rate
+                      {price.crop} · simulated modal reference
                     </Txt>
                     <Txt variant="labelLg" color={colors.primary}>
                       {rupees(price.modal)}{' '}

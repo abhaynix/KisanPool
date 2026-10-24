@@ -20,6 +20,7 @@ export { Trip } from './Trip';
 export { TripShipment } from './TripShipment';
 export { TransporterOffer } from './TransporterOffer';
 export { PricingEvent } from './PricingEvent';
+export { MarketPriceObservation } from './MarketPriceObservation';
 export { WebhookEvent } from './WebhookEvent';
 
 // V2 — Farm Resource Network
@@ -42,6 +43,7 @@ export type { TripDoc } from './Trip';
 export type { TripShipmentDoc } from './TripShipment';
 export type { TransporterOfferDoc } from './TransporterOffer';
 export type { PricingEventDoc } from './PricingEvent';
+export type { MarketPriceObservationDoc } from './MarketPriceObservation';
 export type { WebhookEventDoc } from './WebhookEvent';
 
 export type { FarmMachineDoc } from './FarmMachine';

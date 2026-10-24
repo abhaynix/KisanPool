@@ -219,7 +219,7 @@ export default function MandiDetails() {
         <Card style={{ marginTop: space.md }}>
           <Txt variant="headlineMd">Market information</Txt>
           <Txt variant="labelSm" color={colors.onSurfaceVariant}>
-            Today's rates, per quintal
+            Simulated reference rates, ₹ per quintal · not live market data
           </Txt>
           <Divider />
 
