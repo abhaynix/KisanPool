@@ -5,7 +5,7 @@ import { ApiError, ok } from '../../lib/envelope';
 import { asyncHandler } from '../../middleware/error';
 import { requireAuth, requireRole, type AuthedRequest } from '../../middleware/auth';
 import { requireWritable } from '../resilience/guard';
-import { createFreshRecommendation, getFreshCropCatalogue, getFreshRecommendation } from './service';
+import { createFreshRecommendation, getFreshCropCatalogue, getFreshRecommendation, selectFreshRecommendation, recordFreshDeliveryOutcome, createFreshBuyerOffer, listFreshBuyerOffers } from './service';
 
 export const freshRouter = Router();
 
@@ -48,6 +48,66 @@ freshRouter.get(
   requireRole('FARMER'),
   asyncHandler<AuthedRequest>(async (_req, res) => {
     ok(res, getFreshCropCatalogue());
+  }),
+);
+
+freshRouter.post(
+  '/recommendations/:id/select',
+  requireAuth,
+  requireRole('FARMER'),
+  requireWritable,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    const body = z.object({
+      recommendationType: z.enum(['bestBalanced', 'highestNetProceeds', 'fastestFeasible', 'closestSuitable']),
+      confirmedFarmerPayableINR: z.number().finite().min(0).optional(),
+    }).parse(req.body);
+    ok(res, await selectFreshRecommendation(req.userId, req.params.id, body));
+  }),
+);
+
+freshRouter.post(
+  '/outcomes',
+  requireAuth,
+  requireRole('FARMER'),
+  requireWritable,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    const body = z.object({
+      requestId: z.string().min(1),
+      actualPickupAt: z.coerce.date(),
+      actualDeliveredAt: z.coerce.date(),
+      actualSoldPriceINRPerKg: z.number().finite().min(0).optional(),
+      acceptedKg: z.number().finite().min(0),
+      rejectedKg: z.number().finite().min(0),
+      additionalCostsINR: z.number().finite().min(0).optional(),
+      qualityOutcome: z.enum(['ACCEPTED', 'PARTIAL_REJECTION', 'REJECTED', 'NOT_REPORTED']),
+    }).parse(req.body);
+    ok(res, await recordFreshDeliveryOutcome(req.userId, body), 201);
+  }),
+);
+
+freshRouter.post(
+  '/recommendations/:id/buyer-offers',
+  requireAuth,
+  requireRole('FARMER'),
+  requireWritable,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    const body = z.object({
+      marketName: z.string().trim().min(1).max(120),
+      buyerLabel: z.string().trim().max(120).optional(),
+      priceINRPerKg: z.number().finite().min(0),
+      quantityKg: z.number().finite().positive().optional(),
+      validUntil: z.coerce.date(),
+    }).parse(req.body);
+    ok(res, await createFreshBuyerOffer(req.userId, { ...body, recommendationId: req.params.id }), 201);
+  }),
+);
+
+freshRouter.get(
+  '/recommendations/:id/buyer-offers',
+  requireAuth,
+  requireRole('FARMER'),
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    ok(res, await listFreshBuyerOffers(req.userId, req.params.id));
   }),
 );
 

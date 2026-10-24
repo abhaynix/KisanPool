@@ -307,3 +307,17 @@ Predictions are **advisory**. They are computed read-only from real application 
 - Scoring is deterministic: the same signals produce the same level and reasons every run. Verified in `tests/09_predictions.py`.
 - The feature is labelled "Predictive Insights" / "AI Risk Prediction" because it genuinely runs on application data and stated rules — it is **not** a trained model and no screen claims it is. The scoring lives behind `assess*` service functions so a model can replace the arithmetic later without a route or screen change.
 - Visibility: a farmer sees delivery-delay risk on their active trip only; the transporter also sees cancellation risk on theirs; the operator sees the full roll-up at `/predictions/ops`.
+
+### Fresh recommendations and outcomes (`modules/fresh`)
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| GET | `/fresh/crops` | — | Farmer-owned supported crop catalogue |
+| POST | `/fresh/recommendations` | Crop, harvest, storage, pickup and delivery window | Immutable recommendation snapshot |
+| GET | `/fresh/recommendations/:id` | — | Owner-scoped saved snapshot; no recalculation |
+| POST | `/fresh/recommendations/:id/select` | `{ recommendationType, confirmedFarmerPayableINR? }` | Creates one linked ordinary `TransportRequest` only for a current fully eligible option; changed quotes require reconfirmation; existing offers/booking/payment remain authoritative |
+| POST | `/fresh/outcomes` | Request id, actual pickup/delivery, accepted/rejected kg, optional realized price/cost, quality | One owner-scoped farmer-reported outcome after delivery, including copied expected values where available |
+| POST | `/fresh/recommendations/:id/buyer-offers` | Market, optional buyer label, INR/kg, optional quantity, validity | Farmer-reported unverified quote; never a confirmed buyer offer |
+| GET | `/fresh/recommendations/:id/buyer-offers` | — | Owner-scoped quotes for that snapshot |
+
+Fresh-involved shared trips retain normal per-farmer shipment and allocation behavior and require compatible crop type and destination. Shareable Fresh summaries omit pickup coordinates and contact details.

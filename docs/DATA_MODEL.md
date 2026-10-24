@@ -216,3 +216,22 @@ These are written by the backend from other records and must never be accepted f
 | `Payment.transferId` | Razorpay Route transfer creation / `transfer.processed` |
 | `Vehicle.availableCapacityKg`, `Vehicle.status` | Booking commit and delivery, inside a MongoDB session |
 | `TransportRequest.status` | Service transitions only — never a direct client write |
+
+---
+
+## Fresh extensions
+
+### TransportRequest Fresh link
+
+| Field | Type | Notes |
+|---|---|---|
+| `freshRecommendationId` | ObjectId → `FreshRecommendation` | Optional; unique when present so one immutable comparison creates at most one request |
+| `freshOptionId` | String | The selected recommendation category, not a parallel booking id |
+
+### FreshDeliveryOutcome
+
+One farmer-reported result for a delivered Fresh-linked shipment. Unique by request and shipment; stores its farmer, request, trip, shipment and recommendation links. It captures actual pickup/delivery time, actual sold INR/kg when known, accepted/rejected kg, additional costs when reported, and a quality outcome. Expected sale price, saleable quantity, arrival time and transport cost are copied from the selected immutable recommendation where present. `evidenceSource` is `FARMER_REPORTED`; no client can mark a buyer/operator verification.
+
+### FreshBuyerOffer
+
+A farmer-entered market quote linked to its owner and recommendation: market, optional buyer label, price INR/kg, optional quantity, and `validUntil`. Its status is always `FARMER_REPORTED_UNVERIFIED`. It is not consumed as a confirmed buyer offer or a definitive price observation.

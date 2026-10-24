@@ -274,6 +274,7 @@ async function quoteForJoining(
 export async function previewLoadQuote(input: {
   farmerId: string;
   quantityKg: number;
+  cropType?: string;
   pickup: { lat: number; lng: number };
   destination: { lat: number; lng: number };
 }) {
@@ -296,6 +297,13 @@ export async function previewLoadQuote(input: {
     const activeTrip = await activeFormingTrip(transporterId);
     if (activeTrip && String(activeTrip.vehicleId) !== String(vehicle._id)) continue;
     if (activeTrip && !sameDestination(activeTrip, input.destination)) continue;
+    if (activeTrip && input.cropType) {
+      const activeShipments = await TripShipment.find({
+        tripId: activeTrip._id,
+        state: { $in: OCCUPIES_CAPACITY },
+      }).select('cropType');
+      if (activeShipments.some((shipment) => shipment.cropType.trim().toLowerCase() !== input.cropType!.trim().toLowerCase())) continue;
+    }
 
     const pickupDistanceKm = await getDirections(
       { lat: vehicle.currentLocation.lat as number, lng: vehicle.currentLocation.lng as number },
@@ -736,6 +744,30 @@ export async function selectTransporter(requestId: string, offerId: string, farm
         session ? { session } : undefined,
       );
       trip = created[0];
+    }
+
+    // Fresh lots are pooled by the same trip and pricing engine, with one extra
+    // compatibility guard: once either side is a Fresh recommendation, keep the
+    // shared trip's produce crop homogeneous. Destination and each farmer's own
+    // quantity remain enforced by the normal booking checks below.
+    const onboardShipments = await TripShipment.find({
+      tripId: trip._id,
+      state: { $in: OCCUPIES_CAPACITY },
+    }).session(session ?? null);
+    if (request.freshRecommendationId || onboardShipments.length) {
+      const onboardRequests = await TransportRequest.find({
+        _id: { $in: onboardShipments.map((shipment) => shipment.requestId) },
+        freshRecommendationId: { $exists: true },
+      }).session(session ?? null);
+      if (request.freshRecommendationId || onboardRequests.length) {
+        const cropKeys = new Set([
+          request.cropType.trim().toLowerCase(),
+          ...onboardShipments.map((shipment) => shipment.cropType.trim().toLowerCase()),
+        ]);
+        if (cropKeys.size > 1) {
+          throw new ApiError('CAPACITY_EXCEEDED', 'Fresh produce can only join a shared trip carrying the same crop.');
+        }
+      }
     }
 
     /*

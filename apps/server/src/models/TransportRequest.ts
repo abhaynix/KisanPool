@@ -16,6 +16,9 @@ const transportRequestSchema = new Schema(
     preferredDate: { type: Date, required: true },
     /** free-text extras the farmer typed — crates, fragile, help loading */
     notes: { type: String, default: undefined },
+    /** Fresh recommendation audit link; the ordinary transport lifecycle remains authoritative. */
+    freshRecommendationId: { type: Schema.Types.ObjectId, ref: 'FreshRecommendation', default: undefined },
+    freshOptionId: { type: String, default: undefined },
 
     /**
      * The REQUEST's own lifecycle and nothing else. Once a transporter is chosen,
@@ -34,6 +37,11 @@ const transportRequestSchema = new Schema(
     cancelReason: { type: String, default: undefined },
   },
   { timestamps: true },
+);
+
+transportRequestSchema.index(
+  { freshRecommendationId: 1 },
+  { unique: true, partialFilterExpression: { freshRecommendationId: { $exists: true } } },
 );
 
 export type TransportRequestAttrs = InferSchemaType<typeof transportRequestSchema>;

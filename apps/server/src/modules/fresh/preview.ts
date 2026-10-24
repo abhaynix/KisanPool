@@ -16,7 +16,8 @@ export interface FreshPreviewMarket {
 export async function previewFreshMarketTransport(
   input: {
   farmerId: string;
-  quantityKg: number;
+    quantityKg: number;
+    cropType?: string;
   pickup: { lat: number; lng: number };
   earliestPickupAt?: Date | string;
   pickupBufferMinutes?: number;
@@ -35,6 +36,7 @@ export async function previewFreshMarketTransport(
       quantityKg: input.quantityKg,
       pickup: input.pickup,
       destination: market.location,
+      cropType: input.cropType,
     });
 
     const pickupBufferMinutes = input.pickupBufferMinutes ?? 0;

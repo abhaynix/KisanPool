@@ -33,7 +33,7 @@ import { ErrorView } from '../../components/ErrorView';
 import { BottomNav } from '../../components/BottomNav';
 import { colors, space } from '../../theme';
 
-type MyRequest = Awaited<ReturnType<typeof api.myRequests>>[number] & { state: RequestState };
+type MyRequest = Awaited<ReturnType<typeof api.myRequests>>[number] & { state: RequestState; freshRecommendationId?: string };
 
 type Filter = 'all' | 'awaiting' | 'confirmed' | 'active' | 'completed' | 'cancelled';
 
@@ -216,6 +216,15 @@ function BookingCard({
           onPress={open}
         />
       </View>
+      {row.freshRecommendationId && ['DELIVERED', 'PAYMENT_PENDING', 'PAID', 'COMPLETED'].includes(row.shipment?.state ?? '') ? (
+        <Button
+          label="Record Fresh outcome"
+          icon="assessment"
+          variant="ghost"
+          onPress={() => router.push(`/(farmer)/fresh-outcome?requestId=${encodeURIComponent(row._id)}`)}
+          style={{ marginTop: space.sm }}
+        />
+      ) : null}
     </Card>
   );
 }

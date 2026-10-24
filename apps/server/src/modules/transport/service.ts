@@ -19,6 +19,7 @@ export interface CreateRequestInput {
   destination: GeoPoint;
   preferredDate: Date;
   notes?: string;
+  freshSelection?: { recommendationId: string; optionId: string };
   /** recovery-only: preserve the original identity across a replay */
   id?: string;
 }
@@ -27,10 +28,13 @@ export interface CreateRequestInput {
 const POOL_TTL_HOURS = 24;
 
 export async function createRequest(farmerId: string, input: CreateRequestInput) {
+  const { freshSelection, ...requestInput } = input;
   const request = new TransportRequest({
     _id: input.id,
-    ...input,
+    ...requestInput,
     farmerId,
+    freshRecommendationId: freshSelection?.recommendationId,
+    freshOptionId: freshSelection?.optionId,
     state: 'OPEN',
     expiresAt: new Date(Date.now() + POOL_TTL_HOURS * 3600_000),
   });
@@ -47,6 +51,8 @@ export async function createRequest(farmerId: string, input: CreateRequestInput)
       destination: input.destination,
       preferredDate: input.preferredDate.toISOString(),
       notes: input.notes ?? null,
+      freshRecommendationId: freshSelection?.recommendationId ?? null,
+      freshOptionId: freshSelection?.optionId ?? null,
     },
   });
   await request.save();

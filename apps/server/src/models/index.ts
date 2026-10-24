@@ -22,6 +22,8 @@ export { TransporterOffer } from './TransporterOffer';
 export { PricingEvent } from './PricingEvent';
 export { MarketPriceObservation } from './MarketPriceObservation';
 export { FreshRecommendation } from './FreshRecommendation';
+export { FreshDeliveryOutcome } from './FreshDeliveryOutcome';
+export { FreshBuyerOffer } from './FreshBuyerOffer';
 export { WebhookEvent } from './WebhookEvent';
 
 // V2 — Farm Resource Network
@@ -46,6 +48,8 @@ export type { TransporterOfferDoc } from './TransporterOffer';
 export type { PricingEventDoc } from './PricingEvent';
 export type { MarketPriceObservationDoc } from './MarketPriceObservation';
 export type { FreshRecommendationDoc } from './FreshRecommendation';
+export type { FreshDeliveryOutcomeDoc } from './FreshDeliveryOutcome';
+export type { FreshBuyerOfferDoc } from './FreshBuyerOffer';
 export type { WebhookEventDoc } from './WebhookEvent';
 
 export type { FarmMachineDoc } from './FarmMachine';

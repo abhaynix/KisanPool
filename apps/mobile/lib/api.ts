@@ -224,6 +224,17 @@ export interface FreshRecommendationSnapshot {
   status: 'READY' | 'NO_FEASIBLE_MARKET';
 }
 
+export interface FreshDeliveryOutcomeInput {
+  requestId: string;
+  actualPickupAt: string;
+  actualDeliveredAt: string;
+  actualSoldPriceINRPerKg?: number;
+  acceptedKg: number;
+  rejectedKg: number;
+  additionalCostsINR?: number;
+  qualityOutcome: 'ACCEPTED' | 'PARTIAL_REJECTION' | 'REJECTED' | 'NOT_REPORTED';
+}
+
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   body?: unknown;
@@ -401,6 +412,20 @@ export const api = {
 
   getFreshRecommendation: (id: string) =>
     request<FreshRecommendationSnapshot>(`/fresh/recommendations/${encodeURIComponent(id)}`),
+
+  selectFreshRecommendation: (id: string, recommendationType: 'bestBalanced' | 'highestNetProceeds' | 'fastestFeasible' | 'closestSuitable', confirmedFarmerPayableINR?: number) =>
+    request<{ request?: TransportRequestDTO; alreadySelected?: boolean; reconfirmationRequired?: boolean; currentFarmerPayableINR?: number; previousFarmerPayableINR?: number; message?: string }>(`/fresh/recommendations/${encodeURIComponent(id)}/select`, {
+      method: 'POST', body: { recommendationType, confirmedFarmerPayableINR },
+    }),
+
+  recordFreshDeliveryOutcome: (input: FreshDeliveryOutcomeInput) =>
+    request('/fresh/outcomes', { method: 'POST', body: input }),
+
+  createFreshBuyerOffer: (recommendationId: string, input: { marketName: string; buyerLabel?: string; priceINRPerKg: number; quantityKg?: number; validUntil: string }) =>
+    request<{ _id: string; evidenceStatus: 'FARMER_REPORTED_UNVERIFIED' }>(`/fresh/recommendations/${encodeURIComponent(recommendationId)}/buyer-offers`, { method: 'POST', body: input }),
+
+  freshBuyerOffers: (recommendationId: string) =>
+    request<Array<{ _id: string; marketName: string; buyerLabel: string; priceINRPerKg: number; quantityKg?: number; validUntil: string; evidenceStatus: 'FARMER_REPORTED_UNVERIFIED' }>>(`/fresh/recommendations/${encodeURIComponent(recommendationId)}/buyer-offers`),
 
   /** The farmer's requests, each with how many transporters have claimed it. */
   myRequests: () =>
