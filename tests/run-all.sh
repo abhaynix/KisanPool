@@ -6,6 +6,7 @@ echo '########## Offline Fresh, market-price, cargo, and demo tests ##########'
 node --import tsx --test \
   tests/fresh-engine.test.ts \
   tests/fresh-demo-scenario.test.ts \
+  tests/fresh-live-eligibility.test.ts \
   tests/market-prices.test.ts \
   tests/market-data.test.ts \
   tests/cargo-ledger.test.ts \

@@ -1,4 +1,5 @@
 import { money } from '../../lib/geo';
+import { INDICATIVE_PRICE_WARNING, isRankablePriceSource } from './eligibility';
 import type { FreshnessEstimate } from '../freshness/profiles';
 
 export const RANKING_POLICY_VERSION = 'fresh-balanced-v1';
@@ -89,7 +90,7 @@ const endToEndMinutes = (option: FreshRankingCandidate): number =>
   (option.route.marketUnloadingBufferMinutes ?? 0);
 const isPriceEligible = (candidate: FreshRankingCandidate): boolean =>
   candidate.price.status === 'VALID' &&
-  ['OFFICIAL', 'CONFIRMED_BUYER'].includes(candidate.price.sourceType) &&
+  isRankablePriceSource(candidate.price.sourceType) &&
   candidate.price.modalINRPerKg != null &&
   candidate.price.minINRPerKg != null &&
   candidate.price.maxINRPerKg != null;
@@ -151,6 +152,7 @@ export function rankFreshOptions(
     if (candidate.receivingHoursPass === 'UNKNOWN') warnings.push('RECEIVING_HOURS_UNVERIFIED');
     if (candidate.route.source !== 'GOOGLE') warnings.push('ROUTE_IS_AN_ESTIMATE');
     if (!priceEligible) warnings.push(candidate.price.status === 'STALE' ? 'PRICE_STALE' : 'PRICE_NOT_ELIGIBLE');
+    if (candidate.price.sourceType === 'OPERATOR_INDICATIVE') warnings.push(INDICATIVE_PRICE_WARNING);
     if (candidate.expectedSaleableKg == null) warnings.push('SALEABLE_QUANTITY_UNSUPPORTED');
     if (candidate.unknownCostItems?.length) warnings.push('COSTS_INCOMPLETE');
     if (!transportFeasible) warnings.push('NO_FEASIBLE_TRANSPORT_QUOTE');

@@ -86,6 +86,18 @@ illustrative prices, acceptance, receiving hours, route times and quotes. They a
 simulated and non-bookable, and do not represent current market conditions. No `seed:fresh`
 command is needed for this local simulation.
 
+### Fresh with test market evidence (live path)
+
+The comparison only becomes bookable when the server holds real-shaped evidence for each market. Load local test evidence once:
+
+```bash
+npm run seed:fresh-markets   # local only; refuses NODE_ENV=production; safe to re-run
+```
+
+This creates five Pune-region tomato markets with an acceptance record, receiving hours in IST, an operator-indicative price and verified cost terms. Every value is labelled `TEST SEED` in its source name, and the price is shown as operator-entered rather than market data. Then sign in as farmer `9000000001`, open Fresh Produce, and compare.
+
+To change or add evidence, sign in to the admin console and open **Fresh markets & evidence**. It can add a market, set its selling costs, record crop acceptance with receiving hours, and record a price with its source. There is no automatic import from government or buyer sources; real evidence has to be entered by an operator. A market stays out of definitive ranking unless its acceptance, receiving hours and costs are verified and its price is recent.
+
 If Expo Go reports an SDK mismatch, use the Android Expo Go build for this app's SDK:
 [SDK 54 Expo Go](https://expo.dev/go?device=true&platform=android&sdkVersion=54).
 The installed SDK 58 client cannot load this SDK 54 project. If Android refuses to

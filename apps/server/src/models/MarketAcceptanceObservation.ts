@@ -6,6 +6,9 @@ const schema = new Schema({
   accepted: { type: Boolean, required: true },
   receivingHours: { type: String, required: true, trim: true },
   receivingHoursVerified: { type: Boolean, required: true },
+  /** Machine-checkable receiving window in IST hours (e.g. 6 and 14 for 06:00–14:00). */
+  receivingOpenHourIST: { type: Number, min: 0, max: 23, default: null },
+  receivingCloseHourIST: { type: Number, min: 1, max: 24, default: null },
   sourceName: { type: String, required: true, trim: true },
   sourceUrl: { type: String, default: null },
   observedAt: { type: Date, required: true },

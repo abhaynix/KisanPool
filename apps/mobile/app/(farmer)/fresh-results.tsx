@@ -160,6 +160,7 @@ export default function FreshResults() {
             <Txt variant="labelSm" color={colors.onSurfaceVariant}>{option.distanceFromPickupKm.toFixed(1)} km</Txt>
           </View>
           {snapshot.demoScenarioKey ? <Txt variant="bodyMd" color={colors.onSurfaceVariant}>SIMULATION · crop acceptance and receiving hours are synthetic: {option.simulation?.receivingHours ?? 'fixture values'}</Txt> : <Txt variant="bodyMd" color={colors.onSurfaceVariant}>Market acceptance: {option.marketAcceptance === true ? 'operations verified' : option.marketAcceptance === false ? 'not accepted' : 'unknown'} · price: {option.price ? `${option.price.status}${option.price.modalINRPerKg != null ? ` · modal ₹${option.price.modalINRPerKg}/kg` : ''}${option.price.sourceName ? ` · ${option.price.sourceName}` : ''}` : 'unavailable'}</Txt>}
+          {!snapshot.demoScenarioKey && option.price?.sourceType === 'OPERATOR_INDICATIVE' ? <Txt variant="labelSm" color={colors.onSurfaceVariant}>Operator-entered indicative price. Not a buyer guarantee.</Txt> : null}
           {snapshot.demoScenarioKey && option.price ? <Txt variant="bodyMd" color={colors.onSurfaceVariant}>SIMULATED price ₹{option.price.minINRPerKg}–{option.price.maxINRPerKg} (modal ₹{option.price.modalINRPerKg})/{option.simulation?.priceUnit ?? 'kg'} · {option.simulation?.provenance ?? 'synthetic fixture'}</Txt> : null}
           {option.route ? (
             <Txt variant="bodyMd" color={colors.onSurfaceVariant}>

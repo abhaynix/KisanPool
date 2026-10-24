@@ -464,3 +464,16 @@ Status: Accepted
 When a trip has a recovery incident, payment order creation omits the ordinary order-attached single-transporter Route transfer. After capture, normal payout remains `PENDING` until per-leg reconciliation is supported. Completed-leg distance and evidence are recorded by an admin through an atomic, idempotent update and compensation uses the existing route-cost and commission rules. The admin queue distinguishes estimate from earned amount. No payment status is edited by recovery code, no second farmer charge is created, and no transfer is claimed complete.
 
 Razorpay Route has multi-linked-account transfer capability, but current `Payment`/webhook state stores one transfer ID and does not reconcile existing order-attached transfers across legs. Automatic multi-recipient payout is deferred until payment state, transfer creation, and webhook reconciliation can be changed together. This hold can delay transporter payment; it is safer than paying the original driver the full recovered-trip payout or duplicating it.
+
+## ADR-052: Operator-indicative prices are rankable with a label; Fresh needs verified receiving hours and costs
+
+Date: 2026-10-25
+Status: Accepted
+
+Context: The Fresh comparison never produced a bookable market in practice. Three values were hardcoded in the service (`receivingHoursPass` unknown, `expectedSaleableKg` null, and an unconditional unknown-cost item), so no option could pass `fullyEligible` even with complete operator evidence. Only `OFFICIAL` and `CONFIRMED_BUYER` prices were rankable, although the spec allows an operator-maintained indicative price as a labelled source.
+
+Decision: Fresh derives these values from stored evidence instead of hardcoding them. (1) Receiving hours are checked in IST at the estimated arrival time, and only an operator-verified window can pass. (2) Market selling costs come from an operator-verified cost record; unverified costs stay unknown and block definitive ranking. (3) The saleable quantity is the whole batch, a labelled zero-modelled-loss baseline, because the spec forbids inventing a loss rate. (4) `OPERATOR_INDICATIVE` prices are rankable, carry `INDICATIVE_PRICE_NOT_BUYER_GUARANTEE`, and are shown as operator-entered. SIMULATED prices remain non-rankable.
+
+Consequences: Test and live evidence can now produce bookable comparisons once an operator enters it through the admin console or `npm run seed:fresh-markets`. Stored prices are validated at write time; the admin price route no longer hardcodes `dataStatus`, so the data-quality queue reports real status. Indicative prices are not guarantees, so the UI keeps that label on every such option. Booking still follows the existing transport and payment lifecycle.
+
+Alternatives considered: keeping prices limited to official or buyer sources (rejected: no import pipeline exists, so the feature would stay blocked); presenting seeded prices as live (rejected: spec forbids labelling seed data live); assuming a saleable loss rate (rejected: no reviewed model).

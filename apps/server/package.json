@@ -10,6 +10,7 @@
     "start": "node dist/server.js",
     "seed": "tsx src/seed.ts",
     "seed:fresh": "tsx src/seedFreshDemo.ts",
+    "seed:fresh-markets": "tsx src/seedFreshMarkets.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

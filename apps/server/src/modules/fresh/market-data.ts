@@ -1,5 +1,6 @@
 import { normalizeMarketPrice } from '@kisanpool/shared';
 import { Market, MarketAcceptanceObservation, MarketPriceObservation } from '../../models';
+import { isRankablePriceSource } from './eligibility';
 
 export function marketPriceView(observation: any, now = new Date()) {
   const price = normalizeMarketPrice({
@@ -14,7 +15,10 @@ export function marketPriceView(observation: any, now = new Date()) {
     observedAt: observation.observedAt,
     fetchedAt: observation.fetchedAt,
   }, { now });
-  return { ...price, eligibleForLiveRecommendation: price.dataStatus === 'VALID' && ['OFFICIAL', 'CONFIRMED_BUYER'].includes(price.sourceType) };
+  return {
+    ...price,
+    eligibleForLiveRecommendation: price.dataStatus === 'VALID' && isRankablePriceSource(price.sourceType),
+  };
 }
 
 export async function readMarketEvidence(cropKey: string, now = new Date()) {
@@ -29,14 +33,20 @@ export async function readMarketEvidence(cropKey: string, now = new Date()) {
     const currentAcceptance = acceptance && acceptance.expiresAt > now ? acceptance : null;
     const observation = observations.find((item) => String(item.marketId) === String(market._id));
     const price = observation ? marketPriceView(observation, now) : null;
+    const hoursFields = (item: any) => ({
+      receivingOpenHourIST: item.receivingOpenHourIST ?? null,
+      receivingCloseHourIST: item.receivingCloseHourIST ?? null,
+    });
     return {
       marketId: String(market._id), code: market.code, name: market.name, location: market.location,
       catalogueSource: { name: market.sourceName, url: market.sourceUrl, verifiedAt: market.verifiedAt, verifiedBy: market.verifiedBy },
+      costs: market.costs ?? null,
       acceptance: currentAcceptance ? {
         status: 'VALID',
         accepted: currentAcceptance.accepted,
         receivingHours: currentAcceptance.receivingHours,
         receivingHoursVerified: currentAcceptance.receivingHoursVerified,
+        ...hoursFields(currentAcceptance),
         sourceName: currentAcceptance.sourceName,
         sourceUrl: currentAcceptance.sourceUrl,
         observedAt: currentAcceptance.observedAt,
@@ -44,9 +54,13 @@ export async function readMarketEvidence(cropKey: string, now = new Date()) {
         verificationStatus: currentAcceptance.verificationStatus,
       } : acceptance ? {
         status: 'EXPIRED', accepted: null, receivingHours: null, receivingHoursVerified: false,
+        ...hoursFields(acceptance),
         sourceName: acceptance.sourceName, sourceUrl: acceptance.sourceUrl, observedAt: acceptance.observedAt,
         expiresAt: acceptance.expiresAt, verificationStatus: 'EXPIRED',
-      } : { status: 'UNKNOWN', accepted: null, receivingHours: null, receivingHoursVerified: false, verificationStatus: 'UNKNOWN' },
+      } : {
+        status: 'UNKNOWN', accepted: null, receivingHours: null, receivingHoursVerified: false,
+        receivingOpenHourIST: null, receivingCloseHourIST: null, verificationStatus: 'UNKNOWN',
+      },
       price,
     };
   });

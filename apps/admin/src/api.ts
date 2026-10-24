@@ -418,6 +418,19 @@ export const api = {
       method: 'PATCH', body: JSON.stringify(input),
     }),
 
+  /** Fresh market evidence the operator enters for test or live comparisons. */
+  freshMarkets: (cropKey = 'tomato') =>
+    request<{ cropKey: string; markets: Array<any> }>(`/admin/fresh-markets?cropKey=${encodeURIComponent(cropKey)}`),
+
+  upsertFreshMarket: (code: string, input: Record<string, unknown>) =>
+    request(`/admin/markets/${encodeURIComponent(code)}`, { method: 'PUT', body: JSON.stringify(input) }),
+
+  addFreshAcceptance: (code: string, input: Record<string, unknown>) =>
+    request(`/admin/markets/${encodeURIComponent(code)}/acceptance`, { method: 'POST', body: JSON.stringify(input) }),
+
+  addFreshPrice: (code: string, input: Record<string, unknown>) =>
+    request(`/admin/markets/${encodeURIComponent(code)}/prices`, { method: 'POST', body: JSON.stringify(input) }),
+
   users: (query: { q?: string; role?: string }) => {
     const params = new URLSearchParams();
     if (query.q) params.set('q', query.q);

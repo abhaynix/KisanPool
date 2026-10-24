@@ -9,6 +9,7 @@ import { signAdminToken } from '../../lib/jwt';
 import {
   LOADED_STATES,
   OCCUPIES_CAPACITY,
+  normalizeMarketPrice,
   PAYMENT_STATUSES,
   VEHICLE_STATUSES,
   VERIFICATION_STATUSES,
@@ -38,6 +39,7 @@ import {
 import { reconcileVehicleVerification } from '../documents/service';
 import { retryPayout, settlementOf } from '../payments/service';
 import { requireWritable } from '../resilience/guard';
+import { readMarketEvidence } from '../fresh/market-data';
 
 export const adminRouter = Router();
 
@@ -224,12 +226,25 @@ adminRouter.get('/markets', requireAdmin, asyncHandler(async (_req, res) => {
   ok(res, markets);
 }));
 
+adminRouter.get('/fresh-markets', requireAdmin, asyncHandler(async (req, res) => {
+  const cropKey = z.string().trim().toLowerCase().min(1).max(60).parse(req.query.cropKey ?? 'tomato');
+  ok(res, { cropKey, markets: await readMarketEvidence(cropKey) });
+}));
+
 adminRouter.put('/markets/:code', requireAdmin, requireWritable, asyncHandler(async (req, res) => {
   const code = z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).parse(req.params.code);
   const body = z.object({
     name: z.string().trim().min(1).max(120),
     location: z.object({ name: z.string().trim().max(120).default(''), lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }),
     sourceName: z.string().trim().min(1).max(120), sourceUrl: z.string().url().optional(),
+    costs: z.object({
+      commissionPct: z.number().min(0).max(30).nullable(),
+      handlingINRPerKg: z.number().min(0).max(100).nullable(),
+      costsVerified: z.boolean(),
+      costsSourceName: z.string().trim().min(1).max(120).nullable().optional(),
+    }).refine((value) => !value.costsVerified || (value.commissionPct != null && value.handlingINRPerKg != null), {
+      message: 'Verified costs need both a commission percentage and a handling charge.',
+    }).optional(),
   }).parse(req.body);
   const market = await Market.findOneAndUpdate(
     { code },
@@ -246,8 +261,13 @@ adminRouter.post('/markets/:code/acceptance', requireAdmin, requireWritable, asy
     receivingHours: z.string().trim().min(1).max(120), receivingHoursVerified: z.boolean(),
     sourceName: z.string().trim().min(1).max(120), sourceUrl: z.string().url().optional(),
     observedAt: z.coerce.date(), expiresAt: z.coerce.date(),
+    receivingOpenHourIST: z.number().int().min(0).max(23).nullable().optional(),
+    receivingCloseHourIST: z.number().int().min(1).max(24).nullable().optional(),
   }).parse(req.body);
   if (body.observedAt > new Date() || body.expiresAt <= body.observedAt) throw new ApiError('VALIDATION_ERROR', 'Acceptance evidence must have a valid observation and expiry time.');
+  if (body.receivingHoursVerified && (body.receivingOpenHourIST == null || body.receivingCloseHourIST == null || body.receivingCloseHourIST <= body.receivingOpenHourIST)) {
+    throw new ApiError('VALIDATION_ERROR', 'Verified receiving hours need an IST open hour and a later close hour.');
+  }
   const market = await Market.findOne({ code, active: true });
   if (!market) throw new ApiError('RESOURCE_NOT_FOUND', 'Market not found.');
   const result = await MarketAcceptanceObservation.create({ ...body, marketId: market._id, verifiedBy: (req as any).userId, verificationStatus: 'OPERATIONS_VERIFIED' });
@@ -263,10 +283,15 @@ adminRouter.post('/markets/:code/prices', requireAdmin, requireWritable, asyncHa
     sourceType: z.enum(['OFFICIAL', 'CONFIRMED_BUYER', 'OPERATOR_INDICATIVE']), sourceName: z.string().trim().min(1).max(120),
     sourceUrl: z.string().url().optional(), sourceRecordId: z.string().trim().max(160).optional(), observedAt: z.coerce.date(),
   }).parse(req.body);
+  const fetchedAt = new Date();
+  if (body.observedAt > fetchedAt) throw new ApiError('VALIDATION_ERROR', 'Price observation time cannot be in the future.');
+  const normalized = normalizeMarketPrice({ ...body, fetchedAt }, { now: fetchedAt });
+  if (normalized.validationErrors.length) throw new ApiError('VALIDATION_ERROR', `Price rejected: ${normalized.validationErrors.join(', ')}`);
   const market = await Market.findOne({ code, active: true });
   if (!market) throw new ApiError('RESOURCE_NOT_FOUND', 'Market not found.');
   try {
-    const observation = await MarketPriceObservation.create({ ...body, marketId: market._id, fetchedAt: new Date(), dataStatus: 'INVALID' });
+    // dataStatus and INR/kg values are derived by the model's validation hook, never hardcoded here.
+    const observation = await MarketPriceObservation.create({ ...body, marketId: market._id, fetchedAt });
     ok(res, observation, 201);
   } catch (error) {
     if ((error as { code?: number }).code === 11000 && body.sourceRecordId) {

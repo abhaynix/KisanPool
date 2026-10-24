@@ -17,6 +17,12 @@ const HANDLING: NonNullable<FreshRecommendationInput['handlingCondition']>[] = [
 const WINDOWS = ['Today', '12 hours', '24 hours', '48 hours', 'Custom', 'Flexible'] as const;
 type WindowChoice = typeof WINDOWS[number];
 
+/** Local date-time text in the form the harvest field expects (YYYY-MM-DDTHH:mm). */
+function localDateTimeText(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 function deadlineFor(choice: WindowChoice, custom: string, now: Date): string | undefined {
   if (choice === 'Flexible') return undefined;
   if (choice === 'Today') {
@@ -35,7 +41,8 @@ function deadlineFor(choice: WindowChoice, custom: string, now: Date): string | 
 export default function FreshProduceForm() {
   const router = useRouter();
   const [quantity, setQuantity] = useState('');
-  const [harvestedAt, setHarvestedAt] = useState('');
+  // Default to two hours ago so the farmer only has to correct it, not type it from scratch.
+  const [harvestedAt, setHarvestedAt] = useState(() => localDateTimeText(new Date(Date.now() - 2 * 60 * 60_000)));
   const [ripeness, setRipeness] = useState<FreshRecommendationInput['ripenessStage']>('UNKNOWN');
   const [storage, setStorage] = useState<FreshRecommendationInput['storageCondition']>('UNKNOWN');
   const [temperature, setTemperature] = useState('');
@@ -115,7 +122,7 @@ export default function FreshProduceForm() {
       </Card>
 
       <Field label="Quantity (kg)" value={quantity} onChangeText={(value) => setQuantity(value.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" placeholder="e.g. 500" />
-      <Field label="Harvest date and time" value={harvestedAt} onChangeText={setHarvestedAt} placeholder="2026-10-24T08:30" />
+      <Field label="Harvest date and time (YYYY-MM-DDTHH:mm)" value={harvestedAt} onChangeText={setHarvestedAt} placeholder="2026-10-25T08:30" />
       {!harvestValid && harvestedAt ? <Txt variant="labelSm" color={colors.error}>Enter a valid past date and time.</Txt> : null}
 
       <Txt variant="labelLg" color={colors.onSurfaceVariant} style={{ marginBottom: space.sm }}>Ripeness</Txt>

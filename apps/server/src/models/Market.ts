@@ -9,6 +9,13 @@ const schema = new Schema({
   verifiedAt: { type: Date, default: null },
   verifiedBy: { type: String, default: null },
   active: { type: Boolean, default: true },
+  /** Market-side selling costs. Unverified costs keep a market out of definitive ranking. */
+  costs: {
+    commissionPct: { type: Number, min: 0, max: 30, default: null },
+    handlingINRPerKg: { type: Number, min: 0, max: 100, default: null },
+    costsVerified: { type: Boolean, default: false },
+    costsSourceName: { type: String, default: null },
+  },
 }, { timestamps: true });
 
 schema.index({ active: 1, code: 1 });

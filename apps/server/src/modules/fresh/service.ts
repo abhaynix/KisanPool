@@ -10,6 +10,12 @@ import { rankFreshOptions, RANKING_POLICY_VERSION } from './ranking';
 import { estimateFreshness, FRESHNESS_MODEL_VERSION, getCropProfile } from '../freshness/profiles';
 import { buildFreshDemoScenario, FRESH_DEMO_ID } from './demo-scenario';
 import { readMarketEvidence } from './market-data';
+import {
+  baselineSaleableKg,
+  marketCostTerms,
+  receivingHoursPassForArrival,
+  SALEABLE_BASELINE_WARNING,
+} from './eligibility';
 
 export const FRESH_PRICE_POLICY_VERSION = 'market-price-24h-72h-v1';
 const SNAPSHOT_TTL_MS = 15 * 60 * 1000;
@@ -46,6 +52,7 @@ export function getFreshCropCatalogue() {
 async function marketCandidates(pickup: { lat: number; lng: number }, radiusKm: number) {
   const catalogue = (await Market.find({ active: true }).lean()).filter((market) => market.location?.lat != null && market.location?.lng != null);
   if (catalogue.length) return catalogue.map((market) => ({
+    catalogued: true,
     marketId: market.code,
     name: market.name,
     location: market.location!,
@@ -54,6 +61,7 @@ async function marketCandidates(pickup: { lat: number; lng: number }, radiusKm: 
   })).filter((market) => market.distanceKm <= radiusKm).sort((a, b) => a.distanceKm - b.distanceKm);
   const within = (radius: number) => KNOWN_MANDIS
     .map((market) => ({
+      catalogued: false,
       marketId: market.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
       name: market.name,
       location: { lat: market.lat, lng: market.lng },
@@ -92,6 +100,7 @@ export async function createFreshRecommendation(farmerId: string, input: FreshIn
     })),
   });
   const previewsByMarket = new Map(transportPreviews.options.map((option) => [option.marketId, option]));
+  const saleableKg = baselineSaleableKg(input.quantityKg);
 
   const options = candidates.map((market) => {
     const marketEvidence = evidenceByMarket.get(market.marketId);
@@ -110,12 +119,18 @@ export async function createFreshRecommendation(farmerId: string, input: FreshIn
       routeDurationMinutes: route?.endToEndDurationMinutes ?? 0,
       handlingCondition: input.handlingCondition,
     });
+    const expectedGrossINR = validPrice ? (priceEvidence!.modalPriceINRPerKg ?? 0) * saleableKg : 0;
+    const costTerms = marketCostTerms(marketEvidence?.costs, { expectedGrossINR, saleableKg });
+    const receivingHoursPass = marketEvidence
+      ? receivingHoursPassForArrival(marketEvidence.acceptance, route?.estimatedArrivalAt ?? null)
+      : 'UNKNOWN';
     return {
       marketId: market.marketId,
       marketName: market.name,
       marketLocation: market.location,
       marketReferenceSource: market.source,
       marketAcceptance: marketEvidence?.acceptance.accepted ?? 'UNKNOWN',
+      receivingHoursPass,
       distanceFromPickupKm: Math.round(market.distanceKm * 10) / 10,
       route: route ?? null,
       arrivalAt: route?.estimatedArrivalAt ?? new Date(
@@ -136,12 +151,13 @@ export async function createFreshRecommendation(farmerId: string, input: FreshIn
         sourcePriceUnit: priceEvidence.sourcePriceUnit,
       } : null,
       freshness,
-      expectedSaleableKg: null,
-      unknownCostItems: ['Market handling and selling costs are not configured.'],
+      expectedSaleableKg: saleableKg,
+      knownOtherCostsINR: costTerms.knownOtherCostsINR,
+      unknownCostItems: costTerms.unknownCostItems,
       warnings: [
-        ...(!marketEvidence?.acceptance.accepted ? ['MARKET_ACCEPTANCE_UNVERIFIED'] : []),
+        ...(marketEvidence?.acceptance.accepted === true ? [] : ['MARKET_ACCEPTANCE_UNVERIFIED']),
         ...(!validPrice ? ['PRICE_DATA_UNAVAILABLE_OR_INELIGIBLE'] : []),
-        'SALEABLE_QUANTITY_UNSUPPORTED',
+        SALEABLE_BASELINE_WARNING,
         ...(!transport ? ['NO_VEHICLE_AVAILABLE'] : []),
       ],
     };
@@ -151,7 +167,7 @@ export async function createFreshRecommendation(farmerId: string, input: FreshIn
     marketId: option.marketId,
     marketName: option.marketName,
     cropAccepted: (option.marketAcceptance === true ? true : option.marketAcceptance === false ? false : 'UNKNOWN') as boolean | 'UNKNOWN',
-    receivingHoursPass: 'UNKNOWN' as const,
+    receivingHoursPass: option.receivingHoursPass,
     route: {
       available: option.route != null,
       distanceKm: option.route?.distanceKm ?? 0,
@@ -171,7 +187,8 @@ export async function createFreshRecommendation(farmerId: string, input: FreshIn
       observedAt: option.price?.observedAt,
     },
     quantityKg: input.quantityKg,
-    expectedSaleableKg: null,
+    expectedSaleableKg: option.expectedSaleableKg,
+    knownOtherCostsINR: option.knownOtherCostsINR,
     unknownCostItems: option.unknownCostItems,
     arrivalAt: option.arrivalAt,
     freshness: option.freshness,
@@ -185,17 +202,16 @@ export async function createFreshRecommendation(farmerId: string, input: FreshIn
     ...(candidates.length ? [] : ['NO_MARKET_CANDIDATES_IN_RADIUS']),
     ...(evidence.some((item) => item.acceptance.accepted != null) ? [] : ['MARKET_CROP_ACCEPTANCE']),
     ...(evidence.some((item) => item.price?.eligibleForLiveRecommendation) ? [] : ['LIVE_MARKET_PRICE']),
-    'MARKET_RECEIVING_HOURS',
-    'SUPPORTED_SALEABLE_QUANTITY',
-    'MARKET_HANDLING_COSTS',
+    ...(evidence.some((item) => item.acceptance.receivingHoursVerified) ? [] : ['MARKET_RECEIVING_HOURS']),
+    ...(evidence.some((item) => item.costs?.costsVerified) ? [] : ['MARKET_HANDLING_COSTS']),
     ...(options.some((option) => option.freshness.status === 'INSUFFICIENT_DATA')
       ? ['FRESHNESS_RISK_INPUTS'] : []),
   ])];
   const warnings = [...new Set([
     ...ranked.warnings,
-    'CANDIDATE_MARKET_LOCATIONS_ARE_REFERENCE_ONLY',
-    'NO_LIVE_MARKET_PRICE_FEED_CONFIGURED',
-    'NO_MARKET_ACCEPTANCE_RECORDS_CONFIGURED',
+    ...(candidates.some((market) => !market.catalogued) ? ['CANDIDATE_MARKET_LOCATIONS_ARE_REFERENCE_ONLY'] : []),
+    ...(evidence.some((item) => item.price?.eligibleForLiveRecommendation) ? [] : ['NO_LIVE_MARKET_PRICE_FEED_CONFIGURED']),
+    ...(evidence.some((item) => item.acceptance.accepted != null) ? [] : ['NO_MARKET_ACCEPTANCE_RECORDS_CONFIGURED']),
   ])];
   const expiresAt = new Date(generatedAt.getTime() + SNAPSHOT_TTL_MS);
   const snapshot = await FreshRecommendation.create({
@@ -265,6 +281,12 @@ export async function selectFreshRecommendation(
   }
   if (!currentMarket.price?.eligibleForLiveRecommendation) {
     throw new ApiError('BOOKING_STATE_INVALID', 'The market price is missing, stale or ineligible. Create a new comparison after current evidence is available.');
+  }
+  if (receivingHoursPassForArrival(currentMarket.acceptance, candidate.arrivalAt) !== true) {
+    throw new ApiError('BOOKING_STATE_INVALID', 'The market is not verified to receive produce at the estimated arrival time. Create a new comparison.');
+  }
+  if (!currentMarket.costs?.costsVerified) {
+    throw new ApiError('BOOKING_STATE_INVALID', 'Market selling costs are no longer verified. Create a new comparison after operations confirms them.');
   }
   const oldPrice = candidate.price?.modalINRPerKg;
   const currentPrice = currentMarket.price.modalPriceINRPerKg;
