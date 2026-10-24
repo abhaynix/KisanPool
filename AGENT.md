@@ -63,7 +63,7 @@ cp .env.example .env        # every integration degrades gracefully if a key is 
 npm run seed                # demo farmer + 3 verified transporters + 1 KYC-pending
 npm run dev:server          # Express + Socket.io on :4000
 npm run dev:mobile          # Expo
-npm run dev:admin           # operator console on :5173 (default login admin/admin)
+npm run dev:admin           # operator console on :5173 (set ADMIN_USERNAME/PASSWORD in .env)
 npm run typecheck           # server + app + shared
 npm test                    # 73 integration checks against a running server
 ```

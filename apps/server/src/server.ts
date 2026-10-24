@@ -1,11 +1,11 @@
 import http from 'http';
 import { Server as SocketServer } from 'socket.io';
 import { config } from './config';
-import { connectDb } from './db';
+import { connectDb, disconnectDb } from './db';
 import { createApp } from './app';
 import { registerSocketHandlers } from './modules/realtime';
-import { initJournal } from './modules/resilience/journal';
-import { startHealthLoop } from './modules/resilience/health';
+import { closeJournal, initJournal } from './modules/resilience/journal';
+import { startHealthLoop, stopHealthLoop } from './modules/resilience/health';
 
 async function main(): Promise<void> {
   await connectDb();
@@ -34,6 +34,19 @@ async function main(): Promise<void> {
   // Socket.io on the same HTTP server — one process, REST and realtime (ADR-004)
   const io = new SocketServer(server, { cors: { origin: '*' } });
   registerSocketHandlers(io);
+
+  let shuttingDown = false;
+  const shutdown = async (signal: string): Promise<void> => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`[server] ${signal} received; shutting down`);
+    stopHealthLoop();
+    await new Promise<void>((resolve) => io.close(() => resolve()));
+    await closeJournal();
+    await disconnectDb();
+  };
+  process.once('SIGINT', () => void shutdown('SIGINT'));
+  process.once('SIGTERM', () => void shutdown('SIGTERM'));
 
   server.listen(config.port, () => {
     console.log(`[server] http://localhost:${config.port}`);

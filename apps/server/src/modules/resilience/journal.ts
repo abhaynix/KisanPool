@@ -111,6 +111,8 @@ class FileJournal implements JournalBackendImpl {
 // ---------------------------------------------------------------------------
 
 interface MinimalRedis {
+  connect(): Promise<unknown>;
+  on(event: string, cb: (err: unknown) => void): unknown;
   rPush(key: string, value: string): Promise<unknown>;
   lRange(key: string, start: number, stop: number): Promise<string[]>;
   configGet(param: string): Promise<Record<string, string>>;
@@ -120,6 +122,7 @@ interface MinimalRedis {
   del(key: string | string[]): Promise<unknown>;
   keys(pattern: string): Promise<string[]>;
   quit(): Promise<unknown>;
+  destroy?(): void;
   isOpen?: boolean;
 }
 
@@ -218,57 +221,83 @@ async function tryRedis(overrideUrl?: string): Promise<{ client: MinimalRedis; a
     };
     return null;
   }
+  let client: MinimalRedis | undefined;
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
     // imported lazily so the dependency is genuinely optional
     const mod = (await import('redis')) as unknown as {
-      createClient: (opts: { url: string }) => MinimalRedis & {
-        connect: () => Promise<unknown>;
-        on: (e: string, cb: (err: unknown) => void) => unknown;
-      };
+      createClient: (opts: {
+        url: string;
+        socket: { connectTimeout: number; reconnectStrategy: false };
+      }) => MinimalRedis;
     };
-    const client = mod.createClient({ url });
+    client = mod.createClient({ url, socket: { connectTimeout: 5000, reconnectStrategy: false } });
     // a connection error must not become an unhandled rejection that kills the process
     client.on('error', () => undefined);
-    await client.connect();
-    await client.ping();
 
-    let aof = false;
-    let detail = 'connected';
-    const override = config.redis.durability;
+    const setup = async (): Promise<{ aof: boolean; detail: string }> => {
+      await client!.connect();
+      await client!.ping();
 
-    if (override === 'durable') {
-      /*
-       * The operator has asserted this provider persists. Managed Redis —
-       * Upstash, ElastiCache, Memorystore — is genuinely durable but does not run
-       * standard Redis AOF, so it answers `appendonly: no` or refuses CONFIG GET
-       * entirely. Without this override a correct provider is permanently
-       * mislabelled as a cache (ADR-044).
-       */
-      aof = true;
-      detail = 'connected, durability asserted by REDIS_DURABILITY=durable (managed provider)';
-    } else if (override === 'cache') {
-      detail = 'connected, REDIS_DURABILITY=cache — used for snapshots only, by configuration';
-    } else {
-      try {
-        const cfg = await client.configGet('appendonly');
-        const reported = String(cfg.appendonly ?? '').toLowerCase();
-        aof = reported === 'yes';
-        detail = aof
-          ? 'connected, AOF persistence ON'
-          : `connected, AOF reported as '${reported || 'unknown'}' — treated as a cache. ` +
-            'If this is a managed provider that persists (e.g. Upstash), set REDIS_DURABILITY=durable';
-      } catch {
-        // managed Redis often forbids CONFIG GET. Unverifiable is NOT the same as
-        // verified-durable, so it is treated as a cache unless overridden.
-        detail =
-          'connected, but CONFIG GET is not permitted — durability unverified, treated as a cache. ' +
-          'Set REDIS_DURABILITY=durable if this provider persists.';
+      let aof = false;
+      let detail = 'connected';
+      const override = config.redis.durability;
+
+      if (override === 'durable') {
+        /*
+         * The operator has asserted this provider persists. Managed Redis —
+         * Upstash, ElastiCache, Memorystore — is genuinely durable but does not run
+         * standard Redis AOF, so it answers `appendonly: no` or refuses CONFIG GET
+         * entirely. Without this override a correct provider is permanently
+         * mislabelled as a cache (ADR-044).
+         */
+        aof = true;
+        detail = 'connected, durability asserted by REDIS_DURABILITY=durable (managed provider)';
+      } else if (override === 'cache') {
+        detail = 'connected, REDIS_DURABILITY=cache — used for snapshots only, by configuration';
+      } else {
+        try {
+          const cfg = await client!.configGet('appendonly');
+          const reported = String(cfg.appendonly ?? '').toLowerCase();
+          aof = reported === 'yes';
+          detail = aof
+            ? 'connected, AOF persistence ON'
+            : `connected, AOF reported as '${reported || 'unknown'}' — treated as a cache. ` +
+              'If this is a managed provider that persists (e.g. Upstash), set REDIS_DURABILITY=durable';
+        } catch {
+          // managed Redis often forbids CONFIG GET. Unverifiable is NOT the same as
+          // verified-durable, so it is treated as a cache unless overridden.
+          detail =
+            'connected, but CONFIG GET is not permitted — durability unverified, treated as a cache. ' +
+            'Set REDIS_DURABILITY=durable if this provider persists.';
+        }
       }
-    }
+      return { aof, detail };
+    };
 
-    redisState = { reachable: true, aof, detail };
-    return { client, aof };
+    const result = await Promise.race([
+      setup(),
+      new Promise<never>((_resolve, reject) => {
+        timeout = setTimeout(() => {
+          try {
+            client?.destroy?.();
+          } catch {
+            // the client may already have closed itself after a failed connect
+          }
+          reject(new Error('Redis initialization timed out'));
+        }, 5000);
+      }),
+    ]);
+    clearTimeout(timeout);
+    redisState = { reachable: true, aof: result.aof, detail: result.detail };
+    return { client, aof: result.aof };
   } catch (err) {
+    clearTimeout(timeout);
+    try {
+      client?.destroy?.();
+    } catch {
+      // cleanup must not turn an optional Redis failure into a startup failure
+    }
     redisState = {
       reachable: false,
       aof: false,
@@ -329,6 +358,12 @@ export async function disableRedis(): Promise<JournalHealth> {
   await closeRedis();
   mirror = null;
   return journalHealth();
+}
+
+/** Close the optional Redis connection during graceful server shutdown. */
+export async function closeJournal(): Promise<void> {
+  await closeRedis();
+  mirror = null;
 }
 
 async function closeRedis(): Promise<void> {

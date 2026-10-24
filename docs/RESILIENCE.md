@@ -115,6 +115,13 @@ than an inference: the cost of guessing wrong is a lost booking.
 
 The board shows the backend, whether it is durable, and *why* — never implied.
 
+Redis initialization is bounded: the client gets a five-second connection timeout and
+does not retry indefinitely. If it cannot connect, the server starts in `DEGRADED`
+mode with snapshots in process memory and the append-only journal on the local disk.
+The journal remains durable on that machine, but it is not shared with another server
+instance; snapshot freshness is lost on process restart. Redis is not a booking lock,
+queue, or source of truth.
+
 ---
 
 ## 4. Failure matrix

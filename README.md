@@ -68,8 +68,21 @@ sudo xcodebuild -runFirstLaunch
 open -a Simulator
 npm run ios --workspace @kisanpool/mobile
 # 7. admin console (separate terminal)
-npm run dev:admin           # http://localhost:5173 — login admin / admin
+npm run dev:admin           # http://localhost:5173 — operator credentials from .env
 ```
+
+For Expo LAN development, leave `EXPO_PUBLIC_API_URL` and
+`EXPO_PUBLIC_SOCKET_URL` unset: the app derives both from the host advertised by
+Expo/Metro, so phones on a different developer network do not inherit a stale LAN IP.
+Set these optional variables only when targeting a fixed remote backend; Expo inlines
+`EXPO_PUBLIC_*` values into the JavaScript bundle.
+
+If Expo Go reports an SDK mismatch, use the Android Expo Go build for this app's SDK:
+[SDK 54 Expo Go](https://expo.dev/go?device=true&platform=android&sdkVersion=54).
+The installed SDK 58 client cannot load this SDK 54 project. If Android refuses to
+install the older client over the newer one, uninstall Expo Go first; this clears Expo
+Go's local app data. Reopen the project after installing the compatible client. A
+development build is required to test Razorpay checkout and remote push notifications.
 
 ### Seeded accounts
 
@@ -115,9 +128,10 @@ exact reason is logged server-side; the OTP itself never is.
 
 ## Admin console
 
-`npm run dev:admin` → http://localhost:5173. Default login **admin / admin**; set
-`ADMIN_USERNAME` and `ADMIN_PASSWORD` in `.env` to change it. The server warns at startup
-and the console shows a banner while the defaults are in use.
+`npm run dev:admin` → http://localhost:5173. Set unique `ADMIN_USERNAME` and
+`ADMIN_PASSWORD` values in `.env` before exposing the API on a network; the server warns
+and the console shows a banner while the development fallback `admin/admin` is active.
+The admin session is a 12-hour JWT stored by the browser console.
 
 Four tabs:
 
