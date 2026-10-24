@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>KisanPool Fresh · T00A prototype</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0a0a0a;
+        --surface: #101010;
+        --card: #171717;
+        --raised: #1d1d1d;
+        --line: #393631;
+        --text: #f5f5f5;
+        --muted: #b3b3b3;
+        --accent: #f5f5f5;
+        --success: #86efac;
+        --warning: #fcd34d;
+        --info: #bfdbfe;
+        --danger: #fca5a5;
+        --radius-sm: 8px;
+        --radius-card: 16px;
+        --radius-banner: 24px;
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 12px;
+        --space-4: 16px;
+        --space-5: 24px;
+        --space-6: 32px;
+        font-family: Manrope, system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.45; }
+      button, input, textarea { font: inherit; }
+      button { color: inherit; }
+      .shell { width: min(100%, 1024px); margin: 0 auto; padding: 24px 16px 64px; }
+      .topline { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+      .brand { display: flex; align-items: center; gap: 12px; }
+      .brand-icon { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); font-size: 22px; }
+      .eyebrow { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .09em; }
+      h1 { margin: 2px 0 0; font-size: clamp(22px, 4vw, 30px); line-height: 1.15; }
+      h2 { margin: 0; font-size: 21px; line-height: 1.25; }
+      h3 { margin: 0; font-size: 17px; line-height: 1.3; }
+      p { margin: 0; }
+      .demo { display: inline-flex; align-items: center; gap: 7px; min-height: 32px; border: 1px solid #66551f; border-radius: 999px; padding: 4px 11px; color: var(--warning); background: #1d1a15; font-size: 11px; font-weight: 800; letter-spacing: .035em; white-space: nowrap; }
+      .intro { margin-top: 8px; color: var(--muted); }
+      .tabs { display: flex; gap: 8px; overflow: auto; padding: 0 0 12px; scrollbar-width: thin; }
+      .tab { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border: 1px solid var(--line); border-radius: 999px; padding: 0 16px; background: transparent; cursor: pointer; }
+      .tab[aria-selected="true"] { border-color: var(--text); background: var(--text); color: var(--bg); }
+      .panel { display: none; }
+      .panel.active { display: block; }
+      .section-head { display: flex; align-items: end; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin: 18px 0 16px; }
+      .sub { margin-top: 5px; color: var(--muted); }
+      .banner { margin: 12px 0 16px; border: 1px solid var(--line); border-radius: var(--radius-banner); padding: 16px; background: var(--card); }
+      .banner.warning { border-color: #66551f; background: #1d1a15; }
+      .banner.info { border-color: #2d3e55; background: #17191c; }
+      .banner.success { border-color: #355b3f; background: #151d17; }
+      .card { border: 1px solid var(--line); border-radius: var(--radius-card); padding: 16px; margin: 0 0 12px; background: var(--surface); }
+      .card.featured { border: 2px solid #85817b; background: #121212; }
+      .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .muted { color: var(--muted); }
+      .small { font-size: 12px; }
+      .field { display: block; margin: 16px 0; }
+      .field > span { display: block; margin-bottom: 6px; color: var(--muted); font-weight: 700; }
+      input, textarea { display: block; width: 100%; min-height: 48px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 11px 12px; color: var(--text); background: var(--bg); }
+      textarea { min-height: 92px; resize: vertical; }
+      .group { margin: 16px 0; }
+      .group-label { margin-bottom: 8px; color: var(--muted); font-weight: 700; }
+      .choices { display: flex; flex-wrap: wrap; gap: 8px; }
+      .choice { min-height: 48px; border: 1px solid var(--line); border-radius: 8px; padding: 0 14px; background: var(--bg); cursor: pointer; }
+      .choice.selected { border-color: #85817b; background: #242424; }
+      .location { display: flex; align-items: center; gap: 12px; min-height: 58px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+      .location .grow { flex: 1; }
+      .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border: 1px solid var(--line); border-radius: 8px; padding: 0 18px; background: transparent; font-weight: 700; cursor: pointer; }
+      .btn.primary { border-color: var(--text); background: var(--text); color: var(--bg); }
+      .btn.full { width: 100%; margin: 4px 0 16px; }
+      .badge { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; color: var(--info); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+      .badge.success { color: var(--success); border-color: #355b3f; }
+      .badge.warning { color: var(--warning); border-color: #66551f; }
+      .badge.danger { color: var(--danger); border-color: #633838; }
+      .meta { margin-top: 10px; color: var(--warning); font-size: 10px; font-weight: 800; letter-spacing: .035em; }
+      .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 16px 0; }
+      .metric { min-width: 0; border-radius: 8px; padding: 10px; background: var(--card); }
+      .metric span { display: block; color: var(--muted); font-size: 11px; }
+      .metric strong { display: block; margin-top: 3px; font-size: 15px; }
+      .approval { display: flex; align-items: center; gap: 10px; min-height: 48px; cursor: pointer; }
+      .approval input { width: 20px; height: 20px; min-height: 20px; accent-color: var(--text); }
+      .action { display: flex; align-items: start; gap: 12px; width: 100%; min-height: 64px; border: 1px solid var(--line); border-radius: 16px; padding: 13px; margin: 0 0 8px; text-align: left; background: var(--surface); cursor: pointer; }
+      .action.selected { border-color: #85817b; background: var(--card); }
+      .radio { flex: 0 0 auto; width: 20px; height: 20px; border: 2px solid var(--muted); border-radius: 50%; }
+      .action.selected .radio { border: 6px solid var(--text); }
+      .footer { display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--line); padding-top: 16px; margin-top: 28px; color: var(--muted); font-size: 12px; }
+      @media (max-width: 620px) {
+        .shell { padding-top: 16px; }
+        .topline { align-items: start; flex-direction: column; }
+        .grid { grid-template-columns: 1fr; }
+        .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          color-scheme: light;
+          --bg: #faf9f6;
+          --surface: #ffffff;
+          --card: #f2f1ee;
+          --raised: #ebe9e5;
+          --line: #ded9d0;
+          --text: #171717;
+          --muted: #5b5a57;
+          --accent: #171717;
+          --success: #15803d;
+          --warning: #854d0e;
+          --info: #1d4ed8;
+          --danger: #b91c1c;
+        }
+        .demo { border-color: #d5bf92; background: #f7f3ea; }
+        .banner.warning { border-color: #d5bf92; background: #f7f3ea; }
+        .banner.info { border-color: #c8d7ef; background: #f1f3f5; }
+        .banner.success { border-color: #b7d3bd; background: #eaf4ec; }
+        .card.featured { border-color: #77736d; background: #ffffff; }
+        .choice.selected { border-color: #171717; background: #e5e2dd; }
+        .tab[aria-selected="true"], .btn.primary { border-color: #171717; background: #171717; color: #faf9f6; }
+        .action.selected { border-color: #171717; background: #f2f1ee; }
+        .action.selected .radio { border-color: #171717; }
+        .approval input { accent-color: #171717; }
+      }
+      @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div class="topline">
+          <div class="brand">
+            <div class="brand-icon" aria-hidden="true">✳</div>
+            <div><div class="eyebrow">KISANPOOL FRESH</div><h1>Market &amp; delivery preview</h1></div>
+          </div>
+          <span class="demo">◉ &nbsp;PROTOTYPE · SIMULATED DATA</span>
+        </div>
+        <p class="intro">Review the crop, market comparison, vehicle recovery and partial-sale decisions.</p>
+      </header>
+
+      <nav class="tabs" role="tablist" aria-label="Prototype flows">
+        <button class="tab" role="tab" aria-selected="true" aria-controls="produce" data-tab="produce">🌱 &nbsp;Crop details</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="comparison" data-tab="comparison">⌖ &nbsp;Markets</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="recovery" data-tab="recovery">↻ &nbsp;Recovery</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="partial-sale" data-tab="partial-sale">▤ &nbsp;Partial sale</button>
+      </nav>
+
+      <section class="panel active" id="produce" role="tabpanel">
+        <div class="section-head"><div><h2>Your harvest</h2><p class="sub">A few details help compare suitable delivery options.</p></div></div>
+        <div class="banner info"><strong>Prototype only</strong><p class="sub">Values stay in this preview. No request or booking is created.</p></div>
+        <div class="card">
+          <div class="group"><div class="group-label">Crop</div><div class="choices"><button class="choice selected">Tomato</button><button class="choice" disabled>Other crops · not configured</button></div></div>
+          <label class="field"><span>Quantity (kg)</span><input value="480" inputmode="decimal" aria-label="Simulated quantity in kilograms" /></label>
+          <label class="field"><span>Harvest date and time</span><input value="Today, 6:00 AM" aria-label="Simulated harvest date and time" /></label>
+          <div class="group"><div class="group-label">Ripeness stage</div><div class="choices" data-choice-group><button class="choice">Green</button><button class="choice selected">Turning</button><button class="choice">Ripe</button></div></div>
+          <div class="group"><div class="group-label">Storage since harvest</div><div class="choices" data-choice-group><button class="choice selected">Shaded</button><button class="choice">Ambient</button><button class="choice">Cool</button><button class="choice">Unknown</button></div></div>
+          <div class="group"><div class="group-label">Pickup location</div><div class="location"><span aria-hidden="true">⌖</span><span class="grow"><strong>Nashik, Maharashtra</strong><br/><span class="muted small">Simulated pickup · editable in the real flow</span></span><span aria-hidden="true">✎</span></div></div>
+          <div class="group"><div class="group-label">When would you like it delivered?</div><div class="choices" data-choice-group><button class="choice">Today</button><button class="choice selected">12 hours</button><button class="choice">24 hours</button><button class="choice">48 hours</button><button class="choice">Flexible</button></div></div>
+        </div>
+        <button class="btn primary full" data-go="comparison">Preview simulated market options &nbsp; →</button>
+      </section>
+
+      <section class="panel" id="comparison" role="tabpanel" hidden>
+        <div class="section-head"><div><h2>Compare suitable markets</h2><p class="sub">Illustrative scenario · prices and transport quotes are simulated.</p></div></div>
+        <div class="banner warning"><strong>Prices are not live</strong><p class="sub">Sample data only. This is not a confirmed buyer offer or guaranteed return.</p></div>
+        <article class="card featured"><div class="row"><strong>Best Balanced Fresh Option</strong><span class="badge success">Balanced pick</span></div><h3 style="margin-top:12px">Pune Market Yard</h3><p class="sub">₹18,400 estimated net · 3h 20m · ₹2,100 transport · balanced score 82/100</p><div class="meta">SIMULATED ESTIMATE · NOT A BUYER OFFER</div></article>
+        <div class="grid">
+          <article class="card"><strong>Highest Net Proceeds</strong><h3 style="margin-top:12px">Vashi APMC</h3><p class="sub">₹19,050 net · 5h 10m · ₹3,500 transport</p><div class="meta">SIMULATED ESTIMATE</div></article>
+          <article class="card"><strong>Fastest Feasible</strong><h3 style="margin-top:12px">Lasalgaon Mandi</h3><p class="sub">₹17,800 net · 1h 45m · ₹950 transport</p><div class="meta">SIMULATED ESTIMATE</div></article>
+        </div>
+        <article class="card"><strong>Closest Suitable</strong><h3 style="margin-top:12px">Lasalgaon Mandi</h3><p class="sub">68 km driving route · 1h 45m estimated</p><div class="meta">SIMULATED ESTIMATE</div></article>
+        <article class="card"><strong>Why this option?</strong><p class="sub">The example balances estimated money after costs with delivery suitability. Actual price, route, vehicle availability and crop quality can differ.</p><div class="metrics"><div class="metric"><span>Net proceeds</span><strong>78 / 100</strong></div><div class="metric"><span>Delivery fit</span><strong>86 / 100</strong></div><div class="metric"><span>Balanced score</span><strong>82 / 100</strong></div></div><p class="small" style="color:var(--warning)">Tomato freshness model unavailable in this prototype. No shelf-life estimate shown.</p></article>
+      </section>
+
+      <section class="panel" id="recovery" role="tabpanel" hidden>
+        <div class="section-head"><div><h2>Vehicle breakdown recovery</h2><p class="sub">Example incident and replacement handover for one active delivery.</p></div></div>
+        <article class="card"><div class="row"><h3>Report an incident</h3><span class="badge" id="incident-state">Trip active</span></div><p class="sub">Example trip · 300 kg tomatoes · 42 km from pickup</p><div class="group"><div class="group-label">Incident type</div><div class="choices" data-choice-group><button class="choice selected">Vehicle breakdown</button><button class="choice">Road blocked</button><button class="choice">Safety concern</button></div></div><label class="field"><span>What happened?</span><textarea placeholder="Describe the issue"></textarea></label><button class="btn primary" id="report-incident">Record simulated incident</button><p class="meta">DEMO ACTION ONLY · DOES NOT CONTACT ANYONE OR UPDATE A TRIP.</p></article>
+        <div class="section-head"><div><h2>Replacement and cargo handover</h2><p class="sub">Both parties confirm the same simulated transfer details.</p></div></div>
+        <article class="card"><div class="row"><h3>Replacement vehicle</h3><span class="badge warning">Simulated match</span></div><p class="sub">Verified mini truck · 800 kg capacity · estimated arrival in 35 min</p><div class="metrics"><div class="metric"><span>Revised ETA</span><strong>2:40 PM</strong></div><div class="metric"><span>Remaining leg quote</span><strong>₹740</strong></div><div class="metric"><span>Cargo at handover</span><strong>300 kg · good</strong></div></div><strong>Handover acknowledgements</strong><label class="approval"><input type="checkbox" data-handover /><span>Farmer confirms quantity and condition</span></label><label class="approval"><input type="checkbox" data-handover /><span>Replacement driver confirms custody</span></label><div class="banner warning" id="handover-state">Waiting for verified replacement and both custody confirmations.</div></article>
+      </section>
+
+      <section class="panel" id="partial-sale" role="tabpanel" hidden>
+        <div class="section-head"><div><h2>Sell here or reroute?</h2><p class="sub">Compare options for the remaining cargo after a partial sale.</p></div></div>
+        <article class="card"><div class="row"><h3>Current market · Pune</h3><span class="badge">At market</span></div><div class="metrics"><div class="metric"><span>Received</span><strong>480 kg</strong></div><div class="metric"><span>Already sold</span><strong><span id="sold-amount">180</span> kg</strong></div><div class="metric"><span>Remaining</span><strong><span id="remaining-amount">300</span> kg</strong></div></div><label class="field"><span>Quantity sold here (kg) · simulated</span><input id="sale-qty" type="number" min="0" max="480" value="180" /></label></article>
+        <div class="group-label">Choose an action for <span id="remaining-copy">300</span> kg remaining</div>
+        <button class="action" data-action="SELL_HERE"><span class="radio"></span><span><strong>SELL_HERE</strong><br/><span class="muted">Accept current market's simulated offer · ₹24/kg</span></span></button>
+        <button class="action selected" data-action="REROUTE_TO_MARKET"><span class="radio"></span><span><strong>REROUTE_TO_MARKET</strong><br/><span class="muted">Send remaining cargo to Vashi · ₹760 leg quote · 3h 50m</span></span></button>
+        <button class="action" data-action="HOLD_OR_ESCALATE"><span class="radio"></span><span><strong>HOLD_OR_ESCALATE</strong><br/><span class="muted">Pause the decision and ask operations for help</span></span></button>
+        <article class="card"><div class="row"><h3>Confirm this option</h3><span class="badge warning">Quote v7 · simulated</span></div><p class="sub">Both approvals must refer to this same option and quote version. A changed option clears approvals.</p><label class="approval"><input type="checkbox" data-approval /><span>Farmer approves commercial choice</span></label><label class="approval"><input type="checkbox" data-approval /><span>Transporter confirms route and quote</span></label><div class="banner warning" id="approval-state">Waiting for both parties to approve the same current option and quote.</div></article>
+        <p class="meta">ALL QUANTITIES, OFFERS AND QUOTES ARE SIMULATED EXAMPLES.</p>
+      </section>
+
+      <footer class="footer"><span aria-hidden="true">◉</span> Internal review preview · not a live Fresh Produce feature</footer>
+    </main>
+    <script>
+      const tabs = [...document.querySelectorAll('[data-tab]')];
+      const panels = [...document.querySelectorAll('[role="tabpanel"]')];
+      function showTab(id) {
+        tabs.forEach((tab) => tab.setAttribute('aria-selected', String(tab.dataset.tab === id)));
+        panels.forEach((panel) => { const active = panel.id === id; panel.classList.toggle('active', active); panel.hidden = !active; });
+      }
+      tabs.forEach((tab) => tab.addEventListener('click', () => showTab(tab.dataset.tab)));
+      document.querySelector('[data-go="comparison"]').addEventListener('click', () => showTab('comparison'));
+      document.querySelectorAll('[data-choice-group]').forEach((group) => group.addEventListener('click', (event) => {
+        const target = event.target.closest('.choice'); if (!target || target.disabled) return;
+        group.querySelectorAll('.choice').forEach((choice) => choice.classList.toggle('selected', choice === target));
+      }));
+      document.querySelector('#report-incident').addEventListener('click', (event) => {
+        event.currentTarget.textContent = 'Demo incident recorded';
+        document.querySelector('#incident-state').textContent = 'Demo report saved';
+      });
+      document.querySelectorAll('[data-handover]').forEach((input) => input.addEventListener('change', () => {
+        const all = [...document.querySelectorAll('[data-handover]')].every((item) => item.checked);
+        const box = document.querySelector('#handover-state');
+        box.className = `banner ${all ? 'success' : 'warning'}`;
+        box.textContent = all ? 'Both simulated acknowledgements match. No live handover was recorded.' : 'Waiting for verified replacement and both custody confirmations.';
+      }));
+      const qty = document.querySelector('#sale-qty');
+      qty.addEventListener('input', () => {
+        const sold = Math.max(0, Math.min(480, Number(qty.value) || 0));
+        document.querySelector('#sold-amount').textContent = String(sold);
+        document.querySelector('#remaining-amount').textContent = String(480 - sold);
+        document.querySelector('#remaining-copy').textContent = String(480 - sold);
+      });
+      let currentAction = 'REROUTE_TO_MARKET';
+      document.querySelectorAll('[data-action]').forEach((button) => button.addEventListener('click', () => {
+        currentAction = button.dataset.action;
+        document.querySelectorAll('[data-action]').forEach((item) => item.classList.toggle('selected', item === button));
+        document.querySelectorAll('[data-approval]').forEach((item) => { item.checked = false; });
+        updateApproval();
+      }));
+      function updateApproval() {
+        const all = [...document.querySelectorAll('[data-approval]')].every((item) => item.checked);
+        const box = document.querySelector('#approval-state');
+        box.className = `banner ${all ? 'success' : 'warning'}`;
+        box.textContent = all ? `${currentAction}: both parties approved simulated quote v7. This does not execute a reroute.` : 'Waiting for both parties to approve the same current option and quote.';
+      }
+      document.querySelectorAll('[data-approval]').forEach((input) => input.addEventListener('change', updateApproval));
+    </script>
+  </body>
+</html>
