@@ -2,14 +2,14 @@
   "name": "kisanpool",
   "private": true,
   "version": "0.1.0",
-  "description": "KisanPool \u2014 shared produce transport for Indian farmers",
+  "description": "KisanPool — shared produce transport for Indian farmers",
   "workspaces": [
     "packages/*",
     "apps/*"
   ],
   "scripts": {
     "dev:server": "npm run dev --workspace @kisanpool/server",
-    "dev:mobile": "npm run start --workspace @kisanpool/mobile",
+    "dev:mobile": "npm --prefix apps/mobile run start -- --clear",
     "build:shared": "npm run build --workspace @kisanpool/shared",
     "seed": "npm run seed --workspace @kisanpool/server --",
     "typecheck": "npm run typecheck --workspaces --if-present",
@@ -20,5 +20,9 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "overrides": {
+    "react": "19.1.0",
+    "expo-font": "14.0.12"
   }
 }

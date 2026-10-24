@@ -63,7 +63,10 @@ npm run dev:server          # http://localhost:4000
 
 # 6. app (separate terminal)
 npm run dev:mobile          # Expo — press a / i, or scan the QR
-
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+sudo xcodebuild -runFirstLaunch
+open -a Simulator
+npm run ios --workspace @kisanpool/mobile
 # 7. admin console (separate terminal)
 npm run dev:admin           # http://localhost:5173 — login admin / admin
 ```
@@ -186,3 +189,11 @@ Enforced in code, not convention — see [`CLAUDE.md`](CLAUDE.md):
 - A booking commits only after payment capture; a lost race refunds automatically.
 - Every response uses the `{ success, data|error, requestId }` envelope with one of exactly 25 error codes.
 - One design system, the Farmer set: Inter, `#0d631b` / `#2e7d32`, radii 8 / 16 / 24.
+
+
+
+ios mobile command
+open -a /Applications/Xcode.app/Contents/Applications/DeviceHub.app
+xcrun simctl list devices available
+cd /Users/sujalsandipithape/KisanPool/apps/mobile
+npx expo@latest run:ios
