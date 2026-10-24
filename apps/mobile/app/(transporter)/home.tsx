@@ -54,6 +54,7 @@ import { ErrorView } from '../../components/ErrorView';
 import { BottomNav } from '../../components/BottomNav';
 import { VoiceAssistantButton } from '../../components/VoiceAssistantButton';
 import { colors, radius, space } from '../../theme';
+import { DOCUMENT_VERIFICATION_PAUSED } from '../../lib/featureFlags';
 
 const TRIP_LABEL: Record<string, string> = {
   FORMING: 'Taking loads',
@@ -127,7 +128,7 @@ export default function TransporterDashboard() {
     },
   });
 
-  const verified = vehicle?.verificationStatus === 'VERIFIED';
+  const verified = DOCUMENT_VERIFICATION_PAUSED || vehicle?.verificationStatus === 'VERIFIED';
   const online = vehicle?.status === 'AVAILABLE';
 
   const toggleAvailability = async (next: boolean): Promise<void> => {
@@ -170,6 +171,13 @@ export default function TransporterDashboard() {
           <ErrorView error={dash.error} onRetry={dash.refresh} />
         ) : (
           <>
+            {DOCUMENT_VERIFICATION_PAUSED ? (
+              <Banner tone="warning">
+                <Txt variant="bodyMd" color={colors.onWarningContainer}>
+                  Document verification is paused for local testing only.
+                </Txt>
+              </Banner>
+            ) : null}
             {/* no vehicle at all , a real state with a way out, not a blank screen */}
             {!vehicle ? (
               <Banner tone="warning">

@@ -10,6 +10,8 @@ function num(value: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+const isProd = process.env.NODE_ENV === 'production';
+
 export const config = {
   port: num(process.env.PORT, 4000),
   mongoUri: process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/kisanpool',
@@ -125,5 +127,7 @@ export const config = {
     },
   },
 
-  isProd: process.env.NODE_ENV === 'production',
+  isProd,
+  // Test-only switch: never permit unverified vehicles in production.
+  skipDocumentVerification: !isProd && process.env.SKIP_DOCUMENT_VERIFICATION === 'true',
 } as const;

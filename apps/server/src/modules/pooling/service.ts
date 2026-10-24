@@ -34,6 +34,7 @@ import {
 import { markCommitted, operationKey, recordIntent } from '../resilience/journal';
 import { putTripSnapshot } from '../resilience/snapshots';
 import { recordLinkedCargoTransition } from '../cargo/linked-leg';
+import { config } from '../../config';
 
 /** How far a transporter will reasonably divert to collect a load. */
 const MAX_PICKUP_RADIUS_KM = 60;
@@ -60,7 +61,7 @@ export async function poolForTransporter(transporterId: string) {
   const vehicle = await Vehicle.findOne({ ownerId: transporterId });
   if (!vehicle) throw new ApiError('RESOURCE_NOT_FOUND', 'Register your vehicle first.');
 
-  if (vehicle.verificationStatus !== 'VERIFIED') {
+  if (vehicle.verificationStatus !== 'VERIFIED' && !config.skipDocumentVerification) {
     throw new ApiError(
       'KYC_PENDING_REVIEW',
       'Your documents are still being verified. Requests will appear once they are approved.',
@@ -287,7 +288,7 @@ export async function previewLoadQuote(input: {
 
   const vehicles = await Vehicle.find({
     status: 'AVAILABLE',
-    verificationStatus: 'VERIFIED',
+    ...(!config.skipDocumentVerification ? { verificationStatus: 'VERIFIED' } : {}),
     capacityKg: { $gte: input.quantityKg },
     availableCapacityKg: { $gte: input.quantityKg },
     ownerId: { $ne: input.farmerId },
@@ -400,7 +401,7 @@ export async function claimRequest(
 ) {
   const vehicle = await Vehicle.findOne({ ownerId: transporterId });
   if (!vehicle) throw new ApiError('RESOURCE_NOT_FOUND', 'Register your vehicle first.');
-  if (vehicle.verificationStatus !== 'VERIFIED') {
+  if (vehicle.verificationStatus !== 'VERIFIED' && !config.skipDocumentVerification) {
     throw new ApiError('KYC_PENDING_REVIEW', 'Your documents are still being verified.');
   }
 

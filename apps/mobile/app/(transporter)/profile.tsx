@@ -34,6 +34,7 @@ import {
 } from '../../components/ui';
 import { BottomNav } from '../../components/BottomNav';
 import { colors, space } from '../../theme';
+import { DOCUMENT_VERIFICATION_PAUSED } from '../../lib/featureFlags';
 
 const LANGUAGES: Array<{ code: Language; native: string; english: string }> = [
   { code: 'mr', native: 'मराठी', english: 'Marathi' },
@@ -216,7 +217,7 @@ export default function TransporterProfile() {
           <SettingRow
             icon="badge"
             label="KYC documents"
-            value={vehicle?.verificationStatus === 'VERIFIED' ? 'Verified' : 'Pending'}
+            value={DOCUMENT_VERIFICATION_PAUSED ? 'Paused for local testing' : vehicle?.verificationStatus === 'VERIFIED' ? 'Verified' : 'Pending'}
             onPress={() => router.push('/(auth)/kyc')}
           />
           <SettingRow

@@ -466,7 +466,7 @@ adminRouter.patch(
     // one rule the console must not be able to bypass (ADR-010)
     if (body.status === 'AVAILABLE') {
       const willBeVerified = body.verificationStatus ?? vehicle.verificationStatus;
-      if (willBeVerified !== 'VERIFIED') {
+      if (willBeVerified !== 'VERIFIED' && !config.skipDocumentVerification) {
         throw new ApiError(
           'KYC_PENDING_REVIEW',
           'Verify this vehicle before putting it on the road.',

@@ -16,6 +16,7 @@ import { api } from '../../lib/api';
 import { toAppError } from '../../lib/errors';
 import { Button, Chip, Field, Header, Screen, Txt } from '../../components/ui';
 import { colors, space } from '../../theme';
+import { DOCUMENT_VERIFICATION_PAUSED } from '../../lib/featureFlags';
 
 const LABELS: Record<VehicleType, string> = {
   PICKUP: 'Pickup',
@@ -65,7 +66,7 @@ export default function VehicleRegister() {
         ratePerKm: Number(ratePerKm),
         currentLocation,
       });
-      router.replace('/(auth)/kyc');
+      router.replace(DOCUMENT_VERIFICATION_PAUSED ? '/(transporter)/home' : '/(auth)/kyc');
     } catch (err) {
       setError(toAppError(err).message);
     } finally {
@@ -83,7 +84,7 @@ export default function VehicleRegister() {
     <Screen
       footer={
         <Button
-          label="Continue to documents"
+          label={DOCUMENT_VERIFICATION_PAUSED ? 'Finish setup' : 'Continue to documents'}
           loading={busy}
           disabled={!valid}
           onPress={() => void save()}

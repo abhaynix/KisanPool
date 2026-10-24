@@ -8,6 +8,7 @@ import { Payment, RecoveryIncident, Trip, TripShipment, Vehicle } from '../../mo
 import { getDirections } from '../maps/service';
 import { priceTrip, routeCost, transporterEarning } from '../pooling/pricing';
 import { notifyRecoveryIncident } from '../notifications/service';
+import { config } from '../../config';
 
 export const recoveryRouter = Router();
 const fail = (message: string) => new ApiError('BOOKING_STATE_INVALID', message);
@@ -59,7 +60,7 @@ recoveryRouter.get('/incidents/:id/replacements', requireAuth, requireRole('TRAN
   incident.status = 'SEARCHING_REPLACEMENT';
   await incident.save();
   const requiredKg = incident.affectedShipments.reduce((sum, s) => sum + s.quantityKg, 0);
-  const vehicles = await Vehicle.find({ ownerId: { $ne: incident.originalTransporterId }, status: 'AVAILABLE', verificationStatus: 'VERIFIED', availableCapacityKg: { $gte: requiredKg }, 'currentLocation.lat': { $exists: true }, 'currentLocation.lng': { $exists: true } }).limit(100);
+  const vehicles = await Vehicle.find({ ownerId: { $ne: incident.originalTransporterId }, status: 'AVAILABLE', ...(!config.skipDocumentVerification ? { verificationStatus: 'VERIFIED' } : {}), availableCapacityKg: { $gte: requiredKg }, 'currentLocation.lat': { $exists: true }, 'currentLocation.lng': { $exists: true } }).limit(100);
   const destination = { lat: trip.destination.lat ?? location.lat, lng: trip.destination.lng ?? location.lng };
   const candidates = await Promise.all(vehicles.map(async vehicle => {
     const [approach, distance] = await Promise.all([getDirections(vehicle.currentLocation as { lat: number; lng: number }, location), getDirections(location, destination)]);
@@ -78,7 +79,7 @@ recoveryRouter.post('/incidents/:id/replacement', requireAuth, requireRole('TRAN
   if (!incident.location) throw fail('Incident location is missing; escalate this recovery for review.');
   const location = incident.location as { name: string; lat: number; lng: number; source: 'GPS' | 'DRIVER' | 'OTHER' };
   if (!['RECOVERY_REQUIRED', 'SEARCHING_REPLACEMENT', 'NO_REPLACEMENT_AVAILABLE'].includes(incident.status)) throw fail('Incident is not ready for a replacement proposal.');
-  const vehicle = await Vehicle.findOne({ _id: vehicleId, status: 'AVAILABLE', verificationStatus: 'VERIFIED', ownerId: { $ne: incident.originalTransporterId } });
+  const vehicle = await Vehicle.findOne({ _id: vehicleId, status: 'AVAILABLE', ...(!config.skipDocumentVerification ? { verificationStatus: 'VERIFIED' } : {}), ownerId: { $ne: incident.originalTransporterId } });
   if (!vehicle) throw new ApiError('NO_VEHICLE_AVAILABLE', 'Replacement vehicle is unavailable or unverified.');
   const trip = await Trip.findById(incident.tripId);
   if (!trip) throw new ApiError('RESOURCE_NOT_FOUND', 'Parent trip was not found.');
@@ -86,7 +87,7 @@ recoveryRouter.post('/incidents/:id/replacement', requireAuth, requireRole('TRAN
   if (vehicle.availableCapacityKg < requiredKg) throw new ApiError('CAPACITY_EXCEEDED', 'Replacement vehicle capacity is below the onboard cargo quantity.');
   const destination = { lat: trip.destination.lat ?? location.lat, lng: trip.destination.lng ?? location.lng };
   const [route, pricing] = await Promise.all([getDirections(location, destination), priceTrip({ ratePerKm: vehicle.ratePerKm, destination, version: incident.legs.length, shipments: incident.affectedShipments.map((s, i) => ({ id: String(s.shipmentId), farmerId: String(s.farmerId), quantityKg: s.quantityKg, pickup: location, sequence: i })) })]);
-  const reservedVehicle = await Vehicle.findOneAndUpdate({ _id: vehicle._id, status: 'AVAILABLE', verificationStatus: 'VERIFIED', availableCapacityKg: { $gte: requiredKg } }, { $set: { status: 'BUSY' } }, { new: true });
+  const reservedVehicle = await Vehicle.findOneAndUpdate({ _id: vehicle._id, status: 'AVAILABLE', ...(!config.skipDocumentVerification ? { verificationStatus: 'VERIFIED' } : {}), availableCapacityKg: { $gte: requiredKg } }, { $set: { status: 'BUSY' } }, { new: true });
   if (!reservedVehicle) throw new ApiError('CONCURRENT_BOOKING', 'Replacement vehicle availability changed; refresh and retry.');
   const reservedTrip = await Trip.findOneAndUpdate({ _id: trip._id, openForVehicle: incident.originalVehicleId }, { $set: { openForVehicle: vehicle._id } }, { new: true });
   if (!reservedTrip) { await Vehicle.updateOne({ _id: vehicle._id, status: 'BUSY' }, { $set: { status: 'AVAILABLE' } }); throw new ApiError('CONCURRENT_BOOKING', 'Trip or replacement vehicle reservation changed; refresh and retry.'); }

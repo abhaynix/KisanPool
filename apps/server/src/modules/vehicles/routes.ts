@@ -5,6 +5,7 @@ import { asyncHandler } from '../../middleware/error';
 import { requireAuth, requireRole, type AuthedRequest } from '../../middleware/auth';
 import { VEHICLE_STATUSES, VEHICLE_TYPES } from '@kisanpool/shared';
 import { Vehicle } from '../../models';
+import { config } from '../../config';
 
 export const vehiclesRouter = Router();
 
@@ -69,7 +70,7 @@ vehiclesRouter.patch(
       throw new ApiError('AUTH_FORBIDDEN', 'That vehicle is not yours.');
     }
     // going online is meaningless while unverified — say so rather than silently failing
-    if (status === 'AVAILABLE' && vehicle.verificationStatus !== 'VERIFIED') {
+    if (status === 'AVAILABLE' && vehicle.verificationStatus !== 'VERIFIED' && !config.skipDocumentVerification) {
       throw new ApiError(
         'KYC_PENDING_REVIEW',
         'Your documents are still being verified. You can go online once they are approved.',
