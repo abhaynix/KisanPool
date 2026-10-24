@@ -9,7 +9,6 @@ import { signAdminToken } from '../../lib/jwt';
 import {
   LOADED_STATES,
   OCCUPIES_CAPACITY,
-  normalizeMarketPrice,
   PAYMENT_STATUSES,
   VEHICLE_STATUSES,
   VERIFICATION_STATUSES,
@@ -27,19 +26,14 @@ import {
   AiSession,
   Trip,
   TripShipment,
-  MarketPriceObservation,
-  Market,
-  MarketAcceptanceObservation,
   RecoveryIncident,
   CargoLedger,
-  FreshRecommendation,
   User,
   Vehicle,
 } from '../../models';
 import { reconcileVehicleVerification } from '../documents/service';
 import { retryPayout, settlementOf } from '../payments/service';
 import { requireWritable } from '../resilience/guard';
-import { readMarketEvidence } from '../fresh/market-data';
 
 export const adminRouter = Router();
 
@@ -220,95 +214,9 @@ adminRouter.get(
   }),
 );
 
-// Market facts are entered only by an admin and retain their source and validity window.
-adminRouter.get('/markets', requireAdmin, asyncHandler(async (_req, res) => {
-  const markets = await Market.find({}).sort({ name: 1 }).lean();
-  ok(res, markets);
-}));
-
-adminRouter.get('/fresh-markets', requireAdmin, asyncHandler(async (req, res) => {
-  const cropKey = z.string().trim().toLowerCase().min(1).max(60).parse(req.query.cropKey ?? 'tomato');
-  ok(res, { cropKey, markets: await readMarketEvidence(cropKey) });
-}));
-
-adminRouter.put('/markets/:code', requireAdmin, requireWritable, asyncHandler(async (req, res) => {
-  const code = z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).parse(req.params.code);
-  const body = z.object({
-    name: z.string().trim().min(1).max(120),
-    location: z.object({ name: z.string().trim().max(120).default(''), lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }),
-    sourceName: z.string().trim().min(1).max(120), sourceUrl: z.string().url().optional(),
-    costs: z.object({
-      commissionPct: z.number().min(0).max(30).nullable(),
-      handlingINRPerKg: z.number().min(0).max(100).nullable(),
-      costsVerified: z.boolean(),
-      costsSourceName: z.string().trim().min(1).max(120).nullable().optional(),
-    }).refine((value) => !value.costsVerified || (value.commissionPct != null && value.handlingINRPerKg != null), {
-      message: 'Verified costs need both a commission percentage and a handling charge.',
-    }).optional(),
-  }).parse(req.body);
-  const market = await Market.findOneAndUpdate(
-    { code },
-    { $set: { ...body, verifiedAt: new Date(), verifiedBy: (req as any).userId, active: true } },
-    { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true },
-  );
-  ok(res, market, 201);
-}));
-
-adminRouter.post('/markets/:code/acceptance', requireAdmin, requireWritable, asyncHandler(async (req, res) => {
-  const code = z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).parse(req.params.code);
-  const body = z.object({
-    cropKey: z.string().trim().toLowerCase().min(1).max(60), accepted: z.boolean(),
-    receivingHours: z.string().trim().min(1).max(120), receivingHoursVerified: z.boolean(),
-    sourceName: z.string().trim().min(1).max(120), sourceUrl: z.string().url().optional(),
-    observedAt: z.coerce.date(), expiresAt: z.coerce.date(),
-    receivingOpenHourIST: z.number().int().min(0).max(23).nullable().optional(),
-    receivingCloseHourIST: z.number().int().min(1).max(24).nullable().optional(),
-  }).parse(req.body);
-  if (body.observedAt > new Date() || body.expiresAt <= body.observedAt) throw new ApiError('VALIDATION_ERROR', 'Acceptance evidence must have a valid observation and expiry time.');
-  if (body.receivingHoursVerified && (body.receivingOpenHourIST == null || body.receivingCloseHourIST == null || body.receivingCloseHourIST <= body.receivingOpenHourIST)) {
-    throw new ApiError('VALIDATION_ERROR', 'Verified receiving hours need an IST open hour and a later close hour.');
-  }
-  const market = await Market.findOne({ code, active: true });
-  if (!market) throw new ApiError('RESOURCE_NOT_FOUND', 'Market not found.');
-  const result = await MarketAcceptanceObservation.create({ ...body, marketId: market._id, verifiedBy: (req as any).userId, verificationStatus: 'OPERATIONS_VERIFIED' });
-  ok(res, result, 201);
-}));
-
-adminRouter.post('/markets/:code/prices', requireAdmin, requireWritable, asyncHandler(async (req, res) => {
-  const code = z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).parse(req.params.code);
-  const body = z.object({
-    cropKey: z.string().trim().toLowerCase().min(1).max(60), sourceCommodityName: z.string().trim().min(1).max(120),
-    sourceMinPrice: z.number().finite().min(0), sourceModalPrice: z.number().finite().min(0), sourceMaxPrice: z.number().finite().min(0),
-    sourcePriceUnit: z.enum(['INR_PER_KG', 'INR_PER_QUINTAL', 'INR_PER_TONNE']),
-    sourceType: z.enum(['OFFICIAL', 'CONFIRMED_BUYER', 'OPERATOR_INDICATIVE']), sourceName: z.string().trim().min(1).max(120),
-    sourceUrl: z.string().url().optional(), sourceRecordId: z.string().trim().max(160).optional(), observedAt: z.coerce.date(),
-  }).parse(req.body);
-  const fetchedAt = new Date();
-  if (body.observedAt > fetchedAt) throw new ApiError('VALIDATION_ERROR', 'Price observation time cannot be in the future.');
-  const normalized = normalizeMarketPrice({ ...body, fetchedAt }, { now: fetchedAt });
-  if (normalized.validationErrors.length) throw new ApiError('VALIDATION_ERROR', `Price rejected: ${normalized.validationErrors.join(', ')}`);
-  const market = await Market.findOne({ code, active: true });
-  if (!market) throw new ApiError('RESOURCE_NOT_FOUND', 'Market not found.');
-  try {
-    // dataStatus and INR/kg values are derived by the model's validation hook, never hardcoded here.
-    const observation = await MarketPriceObservation.create({ ...body, marketId: market._id, fetchedAt });
-    ok(res, observation, 201);
-  } catch (error) {
-    if ((error as { code?: number }).code === 11000 && body.sourceRecordId) {
-      const existing = await MarketPriceObservation.findOne({ sourceType: body.sourceType, sourceRecordId: body.sourceRecordId });
-      if (existing) return ok(res, existing);
-    }
-    throw error;
-  }
-}));
-
-// One read-only queue for Fresh data quality and cargo/recovery work that needs
-// an operator. Each record keeps its real source status; this route does not
-// infer market validity or silently resolve custody differences.
+// One read-only queue for cargo/recovery work that needs an operator.
 adminRouter.get('/fresh-ops', requireAdmin, asyncHandler(async (_req, res) => {
-  const [prices, incidents, ledgers, recommendations, recoverySettlements] = await Promise.all([
-    MarketPriceObservation.find({ dataStatus: { $in: ['STALE', 'EXPIRED', 'INVALID'] } })
-      .populate('marketId', 'name').sort({ fetchedAt: -1 }).limit(100).lean(),
+  const [incidents, ledgers, recoverySettlements] = await Promise.all([
     RecoveryIncident.find({ status: { $nin: ['CLOSED', 'RECOVERED'] } })
       .populate('tripId', 'state').sort({ updatedAt: -1 }).limit(100).lean(),
     CargoLedger.find({ $or: [
@@ -316,13 +224,12 @@ adminRouter.get('/fresh-ops', requireAdmin, asyncHandler(async (_req, res) => {
       { remainingAvailableKg: { $gt: 0 } },
       { 'plans.status': { $in: ['PROPOSED', 'BOOKING_REQUESTED'] } },
     ] }).sort({ updatedAt: -1 }).limit(200).lean(),
-    FreshRecommendation.find({ status: 'NO_FEASIBLE_MARKET' }).sort({ generatedAt: -1 }).limit(100).lean(),
     RecoveryIncident.find({ 'settlement.status': { $in: ['PENDING_OPERATIONS_REVIEW', 'PENDING', 'RETRYABLE', 'BLOCKED_REQUIRES_OPERATIONS', 'BLOCKED_PAYOUT_CAPABILITY'] } }).sort({ updatedAt: -1 }).limit(100).lean(),
   ]);
   const failedImportTracking = { configured: false, failedCount: null as number | null, note: 'No market-price import job or failure log is configured in this deployment.' };
   ok(res, {
     generatedAt: new Date(),
-    marketPrices: { staleOrInvalid: prices },
+    marketPrices: { staleOrInvalid: [] },
     failedImports: failedImportTracking,
     recovery: {
       openIncidents: incidents,
@@ -335,7 +242,7 @@ adminRouter.get('/fresh-ops', requireAdmin, asyncHandler(async (_req, res) => {
       unsoldCargo: ledgers.filter((ledger: any) => ledger.remainingAvailableKg > 0),
       pendingConsentOrReroute: ledgers.flatMap((ledger: any) => ledger.plans.filter((plan: any) => ['PROPOSED', 'BOOKING_REQUESTED'].includes(plan.status)).map((plan: any) => ({ shipmentId: ledger.shipmentId, farmerId: ledger.farmerId, currentLocation: ledger.currentLocation, quantityKg: ledger.remainingAvailableKg, version: plan.version, option: plan.option, status: plan.status, farmerApproval: plan.farmerApproval, transporterApproval: plan.transporterApproval }))),
     },
-    noFeasibleFreshRecommendations: recommendations.map((item: any) => ({ _id: item._id, generatedAt: item.generatedAt, warnings: item.warnings, missingData: item.missingData })),
+    noFeasibleFreshRecommendations: [],
   });
 }));
 

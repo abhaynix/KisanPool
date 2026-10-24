@@ -16,9 +16,6 @@ const transportRequestSchema = new Schema(
     preferredDate: { type: Date, required: true },
     /** free-text extras the farmer typed — crates, fragile, help loading */
     notes: { type: String, default: undefined },
-    /** Fresh recommendation audit link; the ordinary transport lifecycle remains authoritative. */
-    freshRecommendationId: { type: Schema.Types.ObjectId, ref: 'FreshRecommendation', default: undefined },
-    freshOptionId: { type: String, default: undefined },
     /** Continuation request for the unsold balance of an existing cargo shipment. */
     cargoParentShipmentId: { type: Schema.Types.ObjectId, ref: 'TripShipment', default: undefined, index: true },
     cargoPlanId: { type: Schema.Types.ObjectId, ref: 'CargoLedger', default: undefined },
@@ -43,10 +40,6 @@ const transportRequestSchema = new Schema(
   { timestamps: true },
 );
 
-transportRequestSchema.index(
-  { freshRecommendationId: 1 },
-  { unique: true, partialFilterExpression: { freshRecommendationId: { $exists: true } } },
-);
 transportRequestSchema.index(
   { cargoPlanId: 1, cargoPlanVersion: 1 },
   { unique: true, partialFilterExpression: { cargoPlanId: { $exists: true } } },

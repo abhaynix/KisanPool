@@ -11,3 +11,6 @@ coverage/
 # durable recovery journal — runtime state, never committed (ADR-044)
 .data/
 .vscode/
+*.pptx
+*.pdf
+.~lock.*

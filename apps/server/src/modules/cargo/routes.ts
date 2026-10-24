@@ -6,11 +6,10 @@ import { ApiError, ok } from '../../lib/envelope';
 import { config } from '../../config';
 import { asyncHandler } from '../../middleware/error';
 import { requireAdmin, requireAuth, requireRole, type AuthedRequest } from '../../middleware/auth';
-import { CargoLedger, FreshBuyerOffer, FreshRecommendation, RecoveryIncident, TransportRequest, Trip, TripShipment } from '../../models';
+import { CargoLedger, RecoveryIncident, TransportRequest, Trip, TripShipment } from '../../models';
 import { getDirections } from '../maps/service';
 import { previewLoadQuote } from '../pooling/service';
 import { createRequest } from '../transport/service';
-import { estimateFreshness } from '../freshness/profiles';
 import { applyCargoQuantityEvent, cargoBalanceIsValid, cargoEventMatches, hasSameOptionApprovals } from './ledger-math';
 
 export const cargoRouter = Router();
@@ -94,45 +93,11 @@ async function appendEvent(ledger: any, input: { type: string; key: string; quan
 
 async function freshContext(ledger: any) {
   const request = await TransportRequest.findById(ledger.requestId);
-  const snapshot = request?.freshRecommendationId ? await FreshRecommendation.findById(request.freshRecommendationId).lean() as any : null;
-  return { request, snapshot };
+  return { request, snapshot: null };
 }
 
-async function rerouteOptions(ledger: any) {
-  const { snapshot } = await freshContext(ledger);
-  if (!snapshot || ledger.remainingAvailableKg <= 0) return [];
-  const input = snapshot.input as any;
-  const current = ledger.currentLocation as { name: string; lat: number; lng: number };
-  const currentRecord = [...ledger.marketRecords].reverse().find((record: any) => record.currentSellPriceINRPerKg != null && record.currentHandlingCostsINR != null);
-  const transporterId = await currentTransporterId(ledger.tripId);
-  const options = (snapshot.options as any[]).filter((option) => option.marketId && option.marketId !== current.name && option.marketLocation && !(Math.abs(option.marketLocation.lat - current.lat) < 0.0001 && Math.abs(option.marketLocation.lng - current.lng) < 0.0001));
-  return Promise.all(options.map(async (option) => {
-    const destination = { lat: Number(option.marketLocation.lat), lng: Number(option.marketLocation.lng) };
-    const [route, transport] = await Promise.all([
-      getDirections(current, destination),
-      previewLoadQuote({ farmerId: String(ledger.farmerId), quantityKg: ledger.remainingAvailableKg, cropType: ledger.cropType, pickup: current, destination }),
-    ]);
-    const freshness = estimateFreshness({ cropKey: String(input.cropKey ?? ledger.cropType), harvestedAt: ledger.harvestedAt ?? input.harvestedAt, now: new Date(), ripenessStage: ledger.currentRipenessStage, storageCondition: ledger.currentStorageCondition, storageTemperatureC: ledger.currentStorageTemperatureC, routeDurationMinutes: route.durationMinutes, handlingCondition: ledger.currentHandlingCondition });
-    const candidate = transport.candidates.find((row) => row.transporterId === transporterId);
-    const marketRecord = [...ledger.marketRecords].reverse().find((record: any) => record.marketId === String(option.marketId));
-    const targetPrice = marketRecord?.targetPriceINRPerKg ?? option.price?.modalINRPerKg ?? null;
-    const sellPrice = currentRecord?.currentSellPriceINRPerKg;
-    const incrementalAdvantage = candidate && targetPrice != null && sellPrice != null && marketRecord?.targetHandlingCostsINR != null && currentRecord?.currentHandlingCostsINR != null
-      ? Math.round(((targetPrice * ledger.remainingAvailableKg - marketRecord.targetHandlingCostsINR - candidate.farmerPayableINR) - (sellPrice * ledger.remainingAvailableKg - currentRecord.currentHandlingCostsINR)) * 100) / 100
-      : null;
-    return {
-      option: 'REROUTE_TO_MARKET', marketId: String(option.marketId), marketName: String(option.marketName), marketLocation: destination,
-      marketAcceptance: marketRecord?.acceptedCrop ? 'OPERATIONS_VERIFIED' : 'UNKNOWN', receivingHoursStatus: marketRecord?.receivingHoursVerified ? 'OPERATIONS_VERIFIED' : 'UNKNOWN', marketPriceINRPerKg: targetPrice,
-      priceStatus: marketRecord ? 'OPERATIONS_RECORDED' : option.price?.status ?? 'UNAVAILABLE', priceSource: marketRecord?.targetPriceSource ?? option.price?.sourceType ?? 'NONE',
-      route: { distanceKm: route.distanceKm, durationMinutes: route.durationMinutes, source: route.source },
-      quote: candidate ? { amountINR: candidate.farmerPayableINR, vehicleId: candidate.vehicleId, transporterId: candidate.transporterId, pickupDistanceKm: candidate.vehicleToPickupDistanceKm } : null,
-      additionalCostsINR: marketRecord?.targetHandlingCostsINR ?? null, incrementalAdvantageINR: incrementalAdvantage,
-      minimumBenefitINR: config.cargo.minRerouteBenefitINR,
-      minimumBenefitMet: incrementalAdvantage != null && incrementalAdvantage >= config.cargo.minRerouteBenefitINR,
-      freshness, saleableQuantitySupported: false,
-      warnings: ['MARKET_ACCEPTANCE_UNKNOWN', 'RECEIVING_HOURS_UNKNOWN', 'MARKET_PRICE_NOT_GUARANTEED', 'HANDLING_COSTS_UNKNOWN', ...freshness.warnings],
-    };
-  }));
+async function rerouteOptions(_ledger: any): Promise<any[]> {
+  return [];
 }
 
 cargoRouter.post('/shipments/:shipmentId/receive', requireAuth, asyncHandler<AuthedRequest>(async (req, res) => {
@@ -146,7 +111,7 @@ cargoRouter.post('/shipments/:shipmentId/receive', requireAuth, asyncHandler<Aut
   let ledger = await CargoLedger.findOne({ shipmentId: shipment._id });
   if (ledger?.events.some((e) => e.idempotencyKey === body.idempotencyKey)) return ok(res, { ledger, duplicate: true });
   if (ledger) throw fail('Initial market receipt has already been recorded. Use a cargo event for any later quantity change.');
-  const snapshot = request.freshRecommendationId ? await FreshRecommendation.findById(request.freshRecommendationId).lean() as any : null;
+  const snapshot: any = null;
   try {
     ledger = await CargoLedger.create({ shipmentId: shipment._id, farmerId: shipment.farmerId, tripId: trip._id, requestId: request._id, cropType: shipment.cropType, harvestedAt: snapshot?.input?.harvestedAt, initialDispatchedKg: shipment.quantityKg, receivedKg: body.quantityKg, remainingAvailableKg: body.quantityKg, dispatchReceiptVarianceKg: shipment.quantityKg - body.quantityKg, currentRipenessStage: body.ripenessStage, currentStorageCondition: body.storageCondition, currentStorageTemperatureC: body.storageTemperatureC, currentHandlingCondition: body.handlingCondition, currentLocation: body.location, events: [{ type: 'RECEIVED', idempotencyKey: body.idempotencyKey, quantityKg: body.quantityKg, at: new Date(), actorId: req.userId, source: isFarmer ? 'FARMER_REPORTED' : 'TRANSPORTER_REPORTED', location: body.location, condition: body.condition, evidenceUrls: body.evidenceUrls }] });
   } catch (err) {
@@ -183,8 +148,7 @@ cargoRouter.post('/shipments/:shipmentId/events', requireAuth, asyncHandler<Auth
     if (req.role !== 'FARMER') throw new ApiError('AUTH_FORBIDDEN', 'The farmer records the commercial sale.');
     if (!body.evidenceUrls.length || body.priceINRPerKg == null) throw new ApiError('VALIDATION_ERROR', 'A sale needs a price and sale evidence.');
     if (body.buyerOfferId) {
-      const offer = await FreshBuyerOffer.findOne({ _id: body.buyerOfferId, farmerId: req.userId, validUntil: { $gt: new Date() } });
-      if (!offer || (offer.quantityKg != null && offer.quantityKg < body.quantityKg)) throw fail('Buyer offer is expired or does not cover this sale quantity.');
+      throw fail('Buyer offers are not supported.');
     }
   }
   if (['REJECTED', 'RETURNED', 'FINAL_DELIVERY'].includes(body.type) && req.role !== 'TRANSPORTER') throw new ApiError('AUTH_FORBIDDEN', 'Only the transporter can record this custody event.');
@@ -220,8 +184,7 @@ cargoRouter.get('/shipments/:shipmentId/options', requireAuth, asyncHandler<Auth
   await assertCargoParty(ledger, req.userId, req.role);
   const { request, snapshot } = await freshContext(ledger);
   const currentMarket = ledger.currentLocation.name.trim().toLowerCase();
-  const sellOffers = request?.freshRecommendationId ? await FreshBuyerOffer.find({ farmerId: ledger.farmerId, recommendationId: request.freshRecommendationId, validUntil: { $gt: new Date() } }).sort({ priceINRPerKg: -1 }).lean() : [];
-  const sellHere = sellOffers.filter((offer) => offer.marketName.trim().toLowerCase() === currentMarket && (offer.quantityKg == null || offer.quantityKg > 0)).map((offer) => { const quantityKg = Math.min(ledger.remainingAvailableKg, offer.quantityKg ?? ledger.remainingAvailableKg); return { offerId: String(offer._id), marketName: offer.marketName, priceINRPerKg: offer.priceINRPerKg, quantityKg, evidenceStatus: offer.evidenceStatus, validUntil: offer.validUntil, expectedGrossINR: Math.round(offer.priceINRPerKg * quantityKg * 100) / 100 }; });
+  const sellHere: any[] = [];
   const routes = await rerouteOptions(ledger);
   const rerouteAttempts = ledger.plans.filter((plan: any) => plan.option === 'REROUTE_TO_MARKET' && ['BOOKING_REQUESTED', 'DISPATCHED', 'RECEIVED'].includes(plan.status)).length;
   ok(res, { shipmentId: String(shipment._id), currentLocation: ledger.currentLocation, originalHarvestAt: ledger.harvestedAt ?? null, quantity: { receivedKg: ledger.receivedKg, soldKg: ledger.soldKg, rejectedKg: ledger.rejectedKg, remainingKg: ledger.remainingAvailableKg, inTransitKg: ledger.inTransitKg, documentedVarianceKg: ledger.documentedVarianceKg }, dispatchReceiptVarianceKg: ledger.dispatchReceiptVarianceKg, sellHere, reroutes: routes, rerouteAttempts, rerouteAttemptsRemaining: Math.max(0, config.cargo.maxRerouteAttempts - rerouteAttempts), sellHereHandlingCostsINR: null, rerouteAdditionalCostsINR: null, sunkTransportCostINR: shipment.finalPrice ?? shipment.allocatedPrice, sunkCostExcludedFromIncrementalComparison: true, decision: !sellHere.length && !routes.some((r) => r.marketAcceptance === 'OPERATIONS_VERIFIED') ? 'HOLD_OR_ESCALATE' : 'FARMER_CHOICE', warnings: [...(ledger.dispatchReceiptVarianceKg > 0 && !ledger.dispatchReceiptVarianceResolvedAt ? ['DISPATCH_RECEIPT_VARIANCE_PENDING_OPERATIONS'] : []), ...(!sellHere.length ? ['NO_CURRENT_BUYER_OFFER'] : []), ...(!snapshot ? ['NO_VERIFIED_FRESH_MARKET_SNAPSHOT'] : []), 'FARMER_REPORTED_BUYER_QUOTES_ARE_UNVERIFIED', 'UNKNOWN_MARKET_ACCEPTANCE_OR_RECEIVING_HOURS_BLOCK_EXECUTION'] });
@@ -241,13 +204,7 @@ cargoRouter.post('/shipments/:shipmentId/decisions', requireAuth, requireRole('F
   const version = ledger.revision + 1;
   let plan: any = { version, idempotencyKey: body.idempotencyKey, option: body.option, status: body.option === 'HOLD_OR_ESCALATE' ? 'ESCALATED' : 'PROPOSED', quantityKg: ledger.remainingAvailableKg, decisionAt: new Date() };
   if (body.option === 'SELL_HERE') {
-    const offer = body.buyerOfferId ? await FreshBuyerOffer.findOne({ _id: body.buyerOfferId, farmerId: req.userId, validUntil: { $gt: new Date() } }) : null;
-    if (!offer || offer.marketName.trim().toLowerCase() !== ledger.currentLocation.name.trim().toLowerCase()) throw fail('Choose a current buyer offer for this market.');
-    plan.buyerOfferId = offer._id;
-    plan.quantityKg = Math.min(ledger.remainingAvailableKg, offer.quantityKg ?? ledger.remainingAvailableKg);
-    plan.targetPriceINRPerKg = offer.priceINRPerKg;
-    plan.targetPriceSource = 'CONFIRMED_BUYER';
-    plan.farmerApproval = { actorId: new Types.ObjectId(req.userId), option: body.option, version, at: new Date() };
+    throw fail('Buyer offers are not supported.');
   } else if (body.option === 'REROUTE_TO_MARKET') {
     const rerouteAttempts = ledger.plans.filter((p: any) => p.option === 'REROUTE_TO_MARKET' && ['BOOKING_REQUESTED', 'DISPATCHED', 'RECEIVED'].includes(p.status)).length;
     if (rerouteAttempts >= config.cargo.maxRerouteAttempts) throw fail('Configured reroute attempt limit reached; request operations assistance.');
@@ -372,26 +329,6 @@ cargoRouter.post('/shipments/:shipmentId/decisions/:version/cancel', requireAuth
   ok(res, { ledger, plan });
 }));
 
-cargoRouter.post('/shipments/:shipmentId/decisions/:version/sell', requireAuth, requireRole('FARMER'), asyncHandler<AuthedRequest>(async (req, res) => {
-  const body = z.object({ quantityKg: z.number().finite().positive(), priceINRPerKg: z.number().finite().min(0), evidenceUrls: z.array(z.string().url()).min(1).max(5), idempotencyKey: eventKey }).parse(req.body);
-  const { shipment } = await parentContext(req.params.shipmentId);
-  if (String(shipment.farmerId) !== req.userId) throw new ApiError('AUTH_FORBIDDEN', 'Only the cargo owner can accept a sale.');
-  const ledger = await CargoLedger.findOne({ shipmentId: shipment._id });
-  if (!ledger) throw new ApiError('RESOURCE_NOT_FOUND', 'Cargo ledger was not found.');
-  const priorSale = ledger.events.find((event) => event.idempotencyKey === body.idempotencyKey);
-  if (priorSale) {
-    if (!cargoEventMatches(priorSale, { type: 'SALE', quantityKg: body.quantityKg, decisionPlanVersion: Number(req.params.version), priceINRPerKg: body.priceINRPerKg })) throw fail('This idempotency key was already used for a different cargo event.');
-    return ok(res, { ledger, duplicate: true, saleEvidenceStatus: 'FARMER_REPORTED_UNVERIFIED' });
-  }
-  const plan = ledger.plans.find((p: any) => p.version === Number(req.params.version)) as any;
-  if (!plan || plan.option !== 'SELL_HERE' || plan.status !== 'PROPOSED' || plan.quantityKg < body.quantityKg) throw fail('There is no matching current sell-here decision for this quantity.');
-  if (!plan.transporterApproval?.accepted || plan.transporterApproval.version !== plan.version || plan.transporterApproval.option !== plan.option) throw fail('The current transporter must confirm the same sell-here handoff before the farmer accepts the sale.');
-  const offer = await FreshBuyerOffer.findOne({ _id: plan.buyerOfferId, farmerId: req.userId, validUntil: { $gt: new Date() } });
-  if (!offer || offer.priceINRPerKg !== body.priceINRPerKg || offer.marketName.trim().toLowerCase() !== ledger.currentLocation.name.trim().toLowerCase() || (offer.quantityKg != null && offer.quantityKg < body.quantityKg)) throw fail('Buyer offer expired or changed; request a new decision.');
-  const planSoldKg = resultSaleKg(ledger.events, plan.version);
-  if (planSoldKg + body.quantityKg > plan.quantityKg) throw new ApiError('CAPACITY_EXCEEDED', 'Sale quantity exceeds the farmer-approved buyer quantity.');
-  const result = await appendEvent(ledger, { type: 'SALE', key: body.idempotencyKey, quantityKg: body.quantityKg, actorId: req.userId, source: 'FARMER_REPORTED', location: ledger.currentLocation, evidenceUrls: body.evidenceUrls, buyerOfferId: String(offer._id), decisionPlanVersion: plan.version, priceINRPerKg: body.priceINRPerKg, note: `Buyer quote ${offer.evidenceStatus}` });
-  if (planSoldKg + body.quantityKg >= plan.quantityKg) plan.status = 'RECEIVED';
-  result.ledger.revision += 1; await result.ledger.save();
-  ok(res, { ledger: result.ledger, duplicate: result.duplicate, saleEvidenceStatus: offer.evidenceStatus });
+cargoRouter.post('/shipments/:shipmentId/decisions/:version/sell', requireAuth, requireRole('FARMER'), asyncHandler<AuthedRequest>(async (_req, _res) => {
+  throw fail('Buyer offers are not supported.');
 }));

@@ -19,7 +19,6 @@ export interface CreateRequestInput {
   destination: GeoPoint;
   preferredDate: Date;
   notes?: string;
-  freshSelection?: { recommendationId: string; optionId: string };
   /** recovery-only: preserve the original identity across a replay */
   id?: string;
   cargoLink?: { parentShipmentId: string; cargoPlanId: string; cargoPlanVersion: number };
@@ -29,13 +28,10 @@ export interface CreateRequestInput {
 const POOL_TTL_HOURS = 24;
 
 export async function createRequest(farmerId: string, input: CreateRequestInput) {
-  const { freshSelection, ...requestInput } = input;
   const request = new TransportRequest({
     _id: input.id,
-    ...requestInput,
+    ...input,
     farmerId,
-    freshRecommendationId: freshSelection?.recommendationId,
-    freshOptionId: freshSelection?.optionId,
     cargoParentShipmentId: input.cargoLink?.parentShipmentId,
     cargoPlanId: input.cargoLink?.cargoPlanId,
     cargoPlanVersion: input.cargoLink?.cargoPlanVersion,
@@ -55,8 +51,6 @@ export async function createRequest(farmerId: string, input: CreateRequestInput)
       destination: input.destination,
       preferredDate: input.preferredDate.toISOString(),
       notes: input.notes ?? null,
-      freshRecommendationId: freshSelection?.recommendationId ?? null,
-      freshOptionId: freshSelection?.optionId ?? null,
       cargoLink: input.cargoLink ?? null,
     },
   });

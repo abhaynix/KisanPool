@@ -761,30 +761,6 @@ export async function selectTransporter(requestId: string, offerId: string, farm
       trip = created[0];
     }
 
-    // Fresh lots are pooled by the same trip and pricing engine, with one extra
-    // compatibility guard: once either side is a Fresh recommendation, keep the
-    // shared trip's produce crop homogeneous. Destination and each farmer's own
-    // quantity remain enforced by the normal booking checks below.
-    const onboardShipments = await TripShipment.find({
-      tripId: trip._id,
-      state: { $in: OCCUPIES_CAPACITY },
-    }).session(session ?? null);
-    if (request.freshRecommendationId || onboardShipments.length) {
-      const onboardRequests = await TransportRequest.find({
-        _id: { $in: onboardShipments.map((shipment) => shipment.requestId) },
-        freshRecommendationId: { $exists: true },
-      }).session(session ?? null);
-      if (request.freshRecommendationId || onboardRequests.length) {
-        const cropKeys = new Set([
-          request.cropType.trim().toLowerCase(),
-          ...onboardShipments.map((shipment) => shipment.cropType.trim().toLowerCase()),
-        ]);
-        if (cropKeys.size > 1) {
-          throw new ApiError('CAPACITY_EXCEEDED', 'Fresh produce can only join a shared trip carrying the same crop.');
-        }
-      }
-    }
-
     /*
      * Serialise every reservation for this trip through the trip document.
      *
