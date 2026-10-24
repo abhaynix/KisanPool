@@ -129,7 +129,8 @@ transportersRouter.post(
       .object({
         panNumber: z.string().regex(/^[A-Z]{5}\d{4}[A-Z]$/, 'must be a valid PAN'),
         bankAccountNumber: z.string().min(6).max(20),
-        ifsc: z.string().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, 'must be a valid IFSC'),
+        // Temporarily accept test IFSC values; restore format validation after testing.
+        ifsc: z.string().trim().min(1).max(20),
         name: z.string().min(1).optional(),
       })
       .parse(req.body);

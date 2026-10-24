@@ -55,8 +55,15 @@ export default function FreshProduceForm() {
 
   const parsedHarvest = new Date(harvestedAt);
   const harvestValid = harvestedAt.trim().length > 0 && !Number.isNaN(parsedHarvest.getTime()) && parsedHarvest <= new Date();
-  const deadline = deadlineFor(windowChoice, customDeadline, new Date());
-  const valid = Number(quantity) > 0 && harvestValid && pickup && (windowChoice !== 'Custom' || Boolean(deadline));
+  const now = Date.now();
+  // Avoid sending an `earliestPickupAt` timestamp that is already in the past
+  // by the time the API validates it after network transit.
+  const earliestPickupAt = now + 2 * 60_000;
+  const deadline = deadlineFor(windowChoice, customDeadline, new Date(now));
+  const quantityKg = Number(quantity);
+  const temperatureValid = !temperature.trim() || (Number.isFinite(Number(temperature)) && Number(temperature) >= -30 && Number(temperature) <= 80);
+  const deadlineValid = windowChoice !== 'Custom' || (Boolean(deadline) && new Date(deadline!).getTime() > earliestPickupAt);
+  const valid = Number.isFinite(quantityKg) && quantityKg > 0 && harvestValid && Boolean(pickup) && temperatureValid && deadlineValid;
 
   const submit = async () => {
     if (!valid || !pickup) return;
@@ -65,14 +72,14 @@ export default function FreshProduceForm() {
     try {
       const result = await api.createFreshRecommendation({
         cropKey: 'tomato',
-        quantityKg: Number(quantity),
+        quantityKg,
         harvestedAt: parsedHarvest.toISOString(),
         ripenessStage: ripeness,
         storageCondition: storage,
         storageTemperatureC: temperature.trim() ? Number(temperature) : undefined,
         handlingCondition: handling,
         pickup,
-        earliestPickupAt: new Date().toISOString(),
+        earliestPickupAt: new Date(earliestPickupAt).toISOString(),
         desiredArrivalBy: deadline,
         searchRadiusKm: 100,
       });
@@ -123,6 +130,9 @@ export default function FreshProduceForm() {
       </View>
       {windowChoice === 'Custom' ? <Field label="Arrival deadline (ISO date and time)" value={customDeadline} onChangeText={setCustomDeadline} placeholder="2026-10-25T08:30" /> : null}
       <Txt variant="bodyMd" color={colors.onSurfaceVariant} style={{ marginBottom: space.md }}>Market locations are reference candidates. Current prices and crop acceptance may be unavailable, and the app will say so.</Txt>
+      {!valid ? <Txt variant="labelSm" color={colors.error} style={{ marginBottom: space.md }}>
+        To compare, enter a positive quantity and valid past harvest time, choose a pickup location, and check temperature or deadline values.
+      </Txt> : null}
       {error ? <ErrorView error={error} onRetry={() => void submit()} /> : null}
     </Screen>
   );
