@@ -147,6 +147,7 @@
         <button class="tab" role="tab" aria-selected="false" aria-controls="comparison" data-tab="comparison">⌖ &nbsp;Markets</button>
         <button class="tab" role="tab" aria-selected="false" aria-controls="recovery" data-tab="recovery">↻ &nbsp;Recovery</button>
         <button class="tab" role="tab" aria-selected="false" aria-controls="partial-sale" data-tab="partial-sale">▤ &nbsp;Partial sale</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="journey" data-tab="journey">✓ &nbsp;Trip & outcome</button>
       </nav>
 
       <section class="panel active" id="produce" role="tabpanel">
@@ -154,14 +155,14 @@
         <div class="banner info"><strong>Prototype only</strong><p class="sub">Values stay in this preview. No request or booking is created.</p></div>
         <div class="card">
           <div class="group"><div class="group-label">Crop</div><div class="choices"><button class="choice selected">Tomato</button><button class="choice" disabled>Other crops · not configured</button></div></div>
-          <label class="field"><span>Quantity (kg)</span><input value="480" inputmode="decimal" aria-label="Simulated quantity in kilograms" /></label>
-          <label class="field"><span>Harvest date and time</span><input value="Today, 6:00 AM" aria-label="Simulated harvest date and time" /></label>
+          <label class="field"><span>Quantity (kg)</span><input id="quantity" type="number" min="1" max="100000" value="480" inputmode="decimal" aria-label="Simulated quantity in kilograms" /></label>
+          <label class="field"><span>Harvest date and time</span><input id="harvested" type="datetime-local" aria-label="Harvest date and time, simulated" /></label>
           <div class="group"><div class="group-label">Ripeness stage</div><div class="choices" data-choice-group><button class="choice">Green</button><button class="choice selected">Turning</button><button class="choice">Ripe</button></div></div>
           <div class="group"><div class="group-label">Storage since harvest</div><div class="choices" data-choice-group><button class="choice selected">Shaded</button><button class="choice">Ambient</button><button class="choice">Cool</button><button class="choice">Unknown</button></div></div>
-          <div class="group"><div class="group-label">Pickup location</div><div class="location"><span aria-hidden="true">⌖</span><span class="grow"><strong>Nashik, Maharashtra</strong><br/><span class="muted small">Simulated pickup · editable in the real flow</span></span><span aria-hidden="true">✎</span></div></div>
+          <div class="group"><label class="group-label" for="pickup-place">Pickup location · simulated reference point</label><select id="pickup-place"><option value="nashik">Nashik city · 19.9975, 73.7898</option><option value="lasalgaon">Lasalgaon · 20.1417, 74.2389</option><option value="pune">Pune · 18.5204, 73.8567</option><option value="vashi">Vashi · 19.0662, 73.0021</option></select><p id="pickup-description" class="small muted">Approximate coordinates; route distance and ETA are demo estimates.</p></div>
           <div class="group"><div class="group-label">When would you like it delivered?</div><div class="choices" data-choice-group><button class="choice">Today</button><button class="choice selected">12 hours</button><button class="choice">24 hours</button><button class="choice">48 hours</button><button class="choice">Flexible</button></div></div>
         </div>
-        <button class="btn primary full" data-go="comparison">Preview simulated market options &nbsp; →</button>
+        <p id="form-message" class="small muted" role="status">Set quantity, harvest time and pickup to compare options.</p><button class="btn primary full" id="compare-markets" data-go="comparison">Compare market options &nbsp; →</button>
       </section>
 
       <section class="panel" id="comparison" role="tabpanel" hidden>
@@ -196,50 +197,6 @@
 
       <footer class="footer"><span aria-hidden="true">◉</span> Internal review preview · not a live Fresh Produce feature</footer>
     </main>
-    <script>
-      const tabs = [...document.querySelectorAll('[data-tab]')];
-      const panels = [...document.querySelectorAll('[role="tabpanel"]')];
-      function showTab(id) {
-        tabs.forEach((tab) => tab.setAttribute('aria-selected', String(tab.dataset.tab === id)));
-        panels.forEach((panel) => { const active = panel.id === id; panel.classList.toggle('active', active); panel.hidden = !active; });
-      }
-      tabs.forEach((tab) => tab.addEventListener('click', () => showTab(tab.dataset.tab)));
-      document.querySelector('[data-go="comparison"]').addEventListener('click', () => showTab('comparison'));
-      document.querySelectorAll('[data-choice-group]').forEach((group) => group.addEventListener('click', (event) => {
-        const target = event.target.closest('.choice'); if (!target || target.disabled) return;
-        group.querySelectorAll('.choice').forEach((choice) => choice.classList.toggle('selected', choice === target));
-      }));
-      document.querySelector('#report-incident').addEventListener('click', (event) => {
-        event.currentTarget.textContent = 'Demo incident recorded';
-        document.querySelector('#incident-state').textContent = 'Demo report saved';
-      });
-      document.querySelectorAll('[data-handover]').forEach((input) => input.addEventListener('change', () => {
-        const all = [...document.querySelectorAll('[data-handover]')].every((item) => item.checked);
-        const box = document.querySelector('#handover-state');
-        box.className = `banner ${all ? 'success' : 'warning'}`;
-        box.textContent = all ? 'Both simulated acknowledgements match. No live handover was recorded.' : 'Waiting for verified replacement and both custody confirmations.';
-      }));
-      const qty = document.querySelector('#sale-qty');
-      qty.addEventListener('input', () => {
-        const sold = Math.max(0, Math.min(480, Number(qty.value) || 0));
-        document.querySelector('#sold-amount').textContent = String(sold);
-        document.querySelector('#remaining-amount').textContent = String(480 - sold);
-        document.querySelector('#remaining-copy').textContent = String(480 - sold);
-      });
-      let currentAction = 'REROUTE_TO_MARKET';
-      document.querySelectorAll('[data-action]').forEach((button) => button.addEventListener('click', () => {
-        currentAction = button.dataset.action;
-        document.querySelectorAll('[data-action]').forEach((item) => item.classList.toggle('selected', item === button));
-        document.querySelectorAll('[data-approval]').forEach((item) => { item.checked = false; });
-        updateApproval();
-      }));
-      function updateApproval() {
-        const all = [...document.querySelectorAll('[data-approval]')].every((item) => item.checked);
-        const box = document.querySelector('#approval-state');
-        box.className = `banner ${all ? 'success' : 'warning'}`;
-        box.textContent = all ? `${currentAction}: both parties approved simulated quote v7. This does not execute a reroute.` : 'Waiting for both parties to approve the same current option and quote.';
-      }
-      document.querySelectorAll('[data-approval]').forEach((input) => input.addEventListener('change', updateApproval));
-    </script>
+    <script src="/prototypes/kisanpool-fresh-demo.js"></script>
   </body>
 </html>
