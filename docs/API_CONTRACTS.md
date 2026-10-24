@@ -80,6 +80,21 @@ Every response — success or failure — uses one shape:
 | POST | `/transporters/payout-onboarding` | `{ panNumber, bankAccountNumber, ifsc, name? }` | Creates a Razorpay **Route linked account** (not a customer) and stores the `acc_…` id plus its creation time. Starts `PENDING`, never `ACTIVE`: Razorpay must verify the bank account and a **24-hour cooling period** applies before the account can receive a transfer (ADR-043) |
 | GET | `/transporters/payouts` | — | Payout passbook: each row's gross share, `payoutState`, `payoutNote` (why it has not settled), `transferId`, `settledAt`; plus `total` (actually settled), `pendingTotal`, `failedCount` and `eligibility` |
 
+### Incident recovery (`modules/recovery`)
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| POST | `/recovery/incidents` | `{ tripId, category, description, location }` | One idempotent open incident for the active trip, with onboard shipment snapshot; notifies affected parties |
+| PATCH | `/recovery/incidents/:id/triage` | `{ safeToMove, note }` | Moves to `RECOVERY_REQUIRED` or `ESCALATED_TO_OPERATIONS` |
+| GET | `/recovery/incidents/:id/replacements` | — | Verified, available vehicles with known location and sufficient cargo capacity, ranked by road approach distance/ETA, with existing-engine remaining-leg quote; original trip transporter only |
+| POST | `/recovery/incidents/:id/replacement` | `{ vehicleId }` | Reserves the replacement vehicle and proposes the server quote; no farmer charge is changed |
+| POST | `/recovery/incidents/:id/confirm-replacement` | `{ accept }` | Records original and replacement transporter consent; rejection releases the reservation |
+| POST | `/recovery/incidents/:id/handover` | `{ location, at, completedDistanceKm, shipments, evidenceUrls }` | Sequential outgoing/incoming custody acknowledgements; mismatch escalates, matching cargo creates the next linked leg |
+| GET | `/recovery/incidents/:id` | — | Incident for a trip party; farmer response is limited to their shipment and omits settlement ledger |
+| GET | `/recovery/settlements/pending` | — | Operator-only per-leg quote/compensation ledger held for payout reconciliation |
+
+Recovery keeps the original `Trip`, shipments, prices and payments intact. Completed-leg compensation uses the existing route-cost/commission functions; farmer charge adjustments remain zero unless a separate approved workflow exists. Per-leg amounts remain on hold because the current one-payment/one-transporter payout contract cannot safely pay two drivers for one shipment. No replacement flow creates an extra payment or transfer.
+
 ### Money: the split, and what is not ours (ADR-043)
 
 The pooled pricing engine (ADR-035) alone decides what a farmer owes. Payments only move that decided number:

@@ -25,6 +25,7 @@ export { FreshRecommendation } from './FreshRecommendation';
 export { FreshDeliveryOutcome } from './FreshDeliveryOutcome';
 export { FreshBuyerOffer } from './FreshBuyerOffer';
 export { WebhookEvent } from './WebhookEvent';
+export { RecoveryIncident } from './RecoveryIncident';
 
 // V2 — Farm Resource Network
 export { FarmMachine } from './FarmMachine';

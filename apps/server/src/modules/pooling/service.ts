@@ -12,6 +12,7 @@ import { haversineKm, money } from '../../lib/geo';
 import { getDirections } from '../maps/service';
 import {
   TransporterOffer,
+  RecoveryIncident,
   TransportRequest,
   Trip,
   TripShipment,
@@ -917,7 +918,9 @@ export async function advanceShipment(
   if (!shipment) throw new ApiError('RESOURCE_NOT_FOUND', 'That shipment no longer exists.');
 
   const trip = await Trip.findById(shipment.tripId);
-  if (!trip || String(trip.transporterId) !== actorId) {
+  const recovery = trip ? await RecoveryIncident.findOne({ tripId: trip._id, status: 'RECOVERED', 'legs.state': 'ACTIVE' }) : null;
+  const recoveryDriver = recovery?.legs.find((leg) => leg.state === 'ACTIVE')?.transporterId;
+  if (!trip || (String(trip.transporterId) !== actorId && String(recoveryDriver ?? '') !== actorId)) {
     throw new ApiError('AUTH_FORBIDDEN', 'Only the assigned transporter can update this.');
   }
 
@@ -966,7 +969,9 @@ export async function advanceShipment(
 export async function advanceTrip(tripId: string, to: TripState, transporterId: string) {
   const trip = await Trip.findById(tripId);
   if (!trip) throw new ApiError('RESOURCE_NOT_FOUND', 'That trip no longer exists.');
-  if (String(trip.transporterId) !== transporterId) {
+  const recovery = await RecoveryIncident.findOne({ tripId: trip._id, status: 'RECOVERED', 'legs.state': 'ACTIVE' });
+  const recoveryDriver = recovery?.legs.find((leg) => leg.state === 'ACTIVE')?.transporterId;
+  if (String(trip.transporterId) !== transporterId && String(recoveryDriver ?? '') !== transporterId) {
     throw new ApiError('AUTH_FORBIDDEN', 'That trip is not yours.');
   }
   if (!canTransitionTrip(trip.state, to)) {
@@ -999,6 +1004,13 @@ export async function advanceTrip(tripId: string, to: TripState, transporterId: 
       );
     }
     trip.completedAt = new Date();
+    const recovery = await RecoveryIncident.findOne({ tripId: trip._id, status: 'RECOVERED', 'legs.state': 'ACTIVE' });
+    if (recovery) {
+      const activeLeg = recovery.legs.find((leg) => leg.state === 'ACTIVE');
+      if (activeLeg) { activeLeg.state = 'COMPLETED'; activeLeg.completedAt = trip.completedAt; }
+      recovery.status = 'CLOSED';
+      await recovery.save();
+    }
   }
 
   const intent = await recordIntent({

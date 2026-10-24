@@ -44,6 +44,13 @@ export async function notifyPaymentCaptured(userIds: string[], tripId: string): 
   });
 }
 
+export async function notifyRecoveryIncident(userIds: string[], tripId: string, incidentId: string): Promise<void> {
+  await push(userIds, 'Transport incident reported', 'Your trip needs a safety and recovery update.', {
+    route: `/trips/${tripId}`,
+    incidentId,
+  });
+}
+
 export async function notifyTripStatus(userIds: string[], tripId: string, status: string): Promise<void> {
   const label: Record<string, string> = {
     BOOKED: 'Your trip is booked.',
