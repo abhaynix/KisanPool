@@ -109,11 +109,24 @@ export default function FreshResultsScreen() {
     router.push({
       pathname: '/(farmer)/requests/new',
       params: {
-        destName: market.name,
-        destLat: String(market.location.lat),
-        destLng: String(market.location.lng),
+        destinationName: market.name,
+        destinationLat: String(market.location.lat),
+        destinationLng: String(market.location.lng),
         cropType: crop,
-        quantityKg: String(market.saleableKg),
+        quantityKg: String(market.saleableKg || quantity || 100),
+      },
+    });
+  };
+
+  const handleSendCustomCrop = (market: FreshMarketItemDTO, targetCrop: string) => {
+    router.push({
+      pathname: '/(farmer)/requests/new',
+      params: {
+        destinationName: market.name,
+        destinationLat: String(market.location.lat),
+        destinationLng: String(market.location.lng),
+        cropType: targetCrop,
+        quantityKg: String(quantity || 100),
       },
     });
   };
@@ -242,6 +255,40 @@ export default function FreshResultsScreen() {
           </View>
         )}
 
+        {/* Market Requirements / Demanded produce */}
+        {market.demands && market.demands.length > 0 && (
+          <View style={styles.demandBox}>
+            <Txt variant="labelSm" style={{ color: colors.onSurfaceVariant, marginBottom: 4 }}>
+              📦 Mandi ki zaroorat (Tap crop to fulfill demand):
+            </Txt>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.xs }}>
+              {market.demands.map((d) => (
+                <Pressable
+                  key={d.crop}
+                  onPress={() => handleSendCustomCrop(market, d.crop)}
+                  style={styles.demandChip}
+                >
+                  <Txt variant="labelSm" style={{ color: colors.primary, fontWeight: '700' }}>
+                    {d.crop.toUpperCase()}
+                  </Txt>
+                  {d.pricePerKg > 0 ? (
+                    <Txt variant="labelSm" style={{ color: colors.onSurface }}>
+                      {' '}· ₹{d.pricePerKg}/kg
+                    </Txt>
+                  ) : (
+                    <Txt variant="labelSm" style={{ color: colors.onSurfaceVariant }}>
+                      {' '}· Open
+                    </Txt>
+                  )}
+                  <Txt variant="labelSm" style={{ color: colors.primary, marginLeft: 2 }}>
+                    ➔
+                  </Txt>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Action Buttons */}
         <View style={styles.actionRow}>
           <Button
@@ -252,7 +299,7 @@ export default function FreshResultsScreen() {
             style={{ flex: 1 }}
           />
           <Button
-            label="Continue"
+            label="Custome Request Bhejo"
             variant="primary"
             icon="arrow-forward"
             onPress={() => handleContinue(market)}
@@ -496,6 +543,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: space.sm,
     marginTop: space.xs,
+  },
+  demandBox: {
+    backgroundColor: colors.surfaceContainerLowest,
+    padding: space.sm,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+  },
+  demandChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceContainer,
+    paddingHorizontal: space.sm,
+    paddingVertical: 4,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
   },
   footnoteBox: {
     paddingVertical: space.md,

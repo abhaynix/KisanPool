@@ -25,19 +25,35 @@ export default function NewRequest() {
     destinationName?: string;
     destinationLat?: string;
     destinationLng?: string;
+    destName?: string;
+    destLat?: string;
+    destLng?: string;
+    crop?: string;
+    cropType?: string;
+    quantity?: string;
+    quantityKg?: string;
   }>();
 
-  const [crop, setCrop] = useState('Onion');
+  const destName = params.destinationName || params.destName;
+  const destLat = params.destinationLat || params.destLat;
+  const destLng = params.destinationLng || params.destLng;
+  const initialCrop = params.crop || params.cropType || 'Onion';
+  const initialQty = params.quantity || params.quantityKg || '';
+
+  const [crop, setCrop] = useState(() => {
+    const matched = CROPS.find((c) => c.toLowerCase() === initialCrop.toLowerCase());
+    return matched || 'Onion';
+  });
   const [customCrop, setCustomCrop] = useState('');
-  const [quantity, setQuantity] = useState('');
+  const [quantity, setQuantity] = useState(initialQty);
   const [notes, setNotes] = useState('');
   const [pickup, setPickup] = useState<GeoPoint | null>(null);
   const [destination, setDestination] = useState<GeoPoint | null>(
-    params.destinationLat && params.destinationLng
+    destLat && destLng
       ? {
-          name: params.destinationName ?? 'Mandi',
-          lat: Number(params.destinationLat),
-          lng: Number(params.destinationLng),
+          name: destName ?? 'Mandi',
+          lat: Number(destLat),
+          lng: Number(destLng),
         }
       : null,
   );

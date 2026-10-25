@@ -152,6 +152,14 @@ export interface MachineSearchResult extends FarmMachineDTO {
   quote: MachineQuoteDTO | null;
 }
 
+export interface MarketDemandDTO {
+  crop: string;
+  pricePerKg: number;
+  rawPrice: number;
+  unit: string;
+  ageHours: number;
+}
+
 export interface FreshMarketItemDTO {
   id: string;
   name: string;
@@ -178,6 +186,21 @@ export interface FreshMarketItemDTO {
   warnings: string[];
   deadlineMiss: boolean;
   score?: number;
+  acceptedCrops?: string[];
+  demands?: MarketDemandDTO[];
+}
+
+export interface ActiveFreshMarketDTO {
+  id: string;
+  name: string;
+  code: string;
+  location: { lat: number; lng: number };
+  acceptedCrops: string[];
+  commissionPct: number;
+  handlingINRPerKg: number;
+  active: boolean;
+  distanceKm: number;
+  demands: MarketDemandDTO[];
 }
 
 export interface FreshRecommendationResponse {
@@ -350,6 +373,14 @@ export const api = {
   }) => request<TransportRequestDTO>('/transport/requests', { method: 'POST', body: input }),
 
   // ---------- Fresh recommendation snapshots ----------
+  freshMarkets: (params?: { lat?: number; lng?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.lat != null) q.set('lat', String(params.lat));
+    if (params?.lng != null) q.set('lng', String(params.lng));
+    const qs = q.toString();
+    return request<ActiveFreshMarketDTO[]>(`/fresh/markets${qs ? `?${qs}` : ''}`);
+  },
+
   freshRecommendations: (body: {
     crop: string;
     quantity: number;

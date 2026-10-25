@@ -438,6 +438,11 @@ describe('KisanPool Fresh - Integration & Model Tests', () => {
     assert.equal(body.error?.code, 'AUTH_UNAUTHENTICATED');
   });
 
+  test('GET /fresh/markets requires authentication (401 when no token)', async () => {
+    const res = await fetch(`${baseUrl}/fresh/markets`);
+    assert.equal(res.status, 401);
+  });
+
   test('admin routes return 403 Forbidden for non-admin farmer token', async () => {
     const farmerToken = signAccessToken({ sub: 'farmer-user-123', role: 'FARMER' });
 

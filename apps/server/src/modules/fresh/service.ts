@@ -35,6 +35,14 @@ export interface MarketCostBreakdown {
   handling: number;
 }
 
+export interface MarketDemandItem {
+  crop: string;
+  pricePerKg: number;
+  rawPrice: number;
+  unit: string;
+  ageHours: number;
+}
+
 export interface MarketRecommendationItem {
   id: string;
   name: string;
@@ -57,6 +65,8 @@ export interface MarketRecommendationItem {
   warnings: string[];
   deadlineMiss: boolean;
   score?: number;
+  acceptedCrops?: string[];
+  demands?: MarketDemandItem[];
 }
 
 export interface RecommendationResponse {
@@ -75,6 +85,9 @@ export function filterMarketsByRadius<T extends { straightDistKm: number }>(item
   let candidates = items.filter((c) => c.straightDistKm <= 100);
   if (candidates.length < 3) {
     candidates = items.filter((c) => c.straightDistKm <= 200);
+  }
+  if (candidates.length < 3 && items.length > 0) {
+    candidates = items;
   }
   return candidates;
 }
@@ -283,26 +296,47 @@ export async function getFreshRecommendations(
 
   const priceByMarketId = new Map(latestPrices.map((lp) => [String(lp._id), lp.latestPrice]));
 
-  // Check if any market has a price for this crop
-  if (!latestPrices.length) {
-    return {
-      markets: [],
-      picks: {},
-      nearTie: false,
-      extraVsNearest: 0,
-      emptyReason: 'Is crop ka price abhi kisi market me nahi hai',
-    };
-  }
+  // Also query latest prices across all crops for these markets to show full market demand
+  const allLatestPrices = await FreshPrice.aggregate([
+    {
+      $match: {
+        marketId: { $in: marketIds },
+      },
+    },
+    { $sort: { observedAt: -1 } },
+    {
+      $group: {
+        _id: { marketId: '$marketId', crop: '$crop' },
+        latestPrice: { $first: '$$ROOT' },
+      },
+    },
+  ]);
+
+  const allPricesByMarketAndCrop = new Map(
+    allLatestPrices.map((lp) => [`${String(lp._id.marketId)}_${lp._id.crop}`, lp.latestPrice]),
+  );
 
   const now = Date.now();
   const processedMarkets: MarketRecommendationItem[] = [];
 
   for (const { market, marketLocation } of candidates) {
     const priceDoc = priceByMarketId.get(String(market._id));
-    if (!priceDoc) {
-      // Market has no price for this crop
-      continue;
-    }
+    const hasPrice = priceDoc != null;
+
+    // Build demand items for all crops accepted by this market
+    const demands: MarketDemandItem[] = (market.acceptedCrops || []).map((c: string) => {
+      const p = allPricesByMarketAndCrop.get(`${String(market._id)}_${c}`);
+      const ageH = p
+        ? Math.max(0, Math.round(((now - new Date(p.observedAt).getTime()) / (3600 * 1000)) * 10) / 10)
+        : 0;
+      return {
+        crop: c,
+        pricePerKg: p ? convertPriceToPerKg(p.price, p.unit) : 0,
+        rawPrice: p ? p.price : 0,
+        unit: p ? p.unit : 'kg',
+        ageHours: ageH,
+      };
+    });
 
     // Distance and ETA
     const dir = await getDirections(pickup, marketLocation);
@@ -335,32 +369,50 @@ export async function getFreshRecommendations(
     const lossPct = calculateLossPct(condition, normCrop, hoursHarvestToArrival);
     const saleableKg = calculateSaleableKg(totalKg, lossPct);
 
-    // Price conversion
-    const pricePerKg = convertPriceToPerKg(priceDoc.price, priceDoc.unit);
-
-    // Net proceeds calculation
-    const financials = calculateNetProceeds({
-      saleableKg,
-      pricePerKg,
-      transportCostINR,
-      commissionPct: market.commissionPct ?? 0,
-      handlingINRPerKg: market.handlingINRPerKg ?? 0,
-    });
-
-    // Price age & freshness
-    const observedAtDate = new Date(priceDoc.observedAt);
-    const ageHours = Math.max(0, Math.round(((now - observedAtDate.getTime()) / (3600 * 1000)) * 10) / 10);
-    let freshness: 'fresh' | 'stale' | 'expired';
+    // Price conversion & net proceeds
+    let pricePerKg = 0;
+    let rawPrice = 0;
+    let rawUnit = 'kg';
+    let priceSource = 'OPERATOR';
+    let ageHours = 0;
+    let freshness: 'fresh' | 'stale' | 'expired' = 'fresh';
     const warnings: string[] = [];
 
-    if (ageHours <= 24) {
-      freshness = 'fresh';
-    } else if (ageHours <= 72) {
-      freshness = 'stale';
-      warnings.push('Price 24 ghante se purana hai (stale)');
+    let netINR = 0;
+    let commissionINR = 0;
+    let handlingINR = 0;
+
+    if (hasPrice) {
+      pricePerKg = convertPriceToPerKg(priceDoc.price, priceDoc.unit);
+      rawPrice = priceDoc.price;
+      rawUnit = priceDoc.unit;
+      priceSource = priceDoc.sourceType;
+      const observedAtDate = new Date(priceDoc.observedAt);
+      ageHours = Math.max(0, Math.round(((now - observedAtDate.getTime()) / (3600 * 1000)) * 10) / 10);
+
+      const financials = calculateNetProceeds({
+        saleableKg,
+        pricePerKg,
+        transportCostINR,
+        commissionPct: market.commissionPct ?? 0,
+        handlingINRPerKg: market.handlingINRPerKg ?? 0,
+      });
+      netINR = financials.netINR;
+      commissionINR = financials.commissionINR;
+      handlingINR = financials.handlingINR;
+
+      if (ageHours <= 24) {
+        freshness = 'fresh';
+      } else if (ageHours <= 72) {
+        freshness = 'stale';
+        warnings.push('Price 24 ghante se purana hai (stale)');
+      } else {
+        freshness = 'expired';
+        warnings.push('Price 72 ghante se purana hai (expired)');
+      }
     } else {
-      freshness = 'expired';
-      warnings.push('Price 72 ghante se purana hai (expired)');
+      freshness = 'stale';
+      warnings.push('Mandi ne is crop ka bhav abhi update nahi kiya hai');
     }
 
     // Deadline check
@@ -376,8 +428,10 @@ export async function getFreshRecommendations(
     }
 
     // Plain Hindi-English reason line
-    let reasonText = `₹${pricePerKg.toFixed(1)}/kg bhav, ${distanceKm} km door, ${lossPct}% est. loss`;
-    if (freshness === 'fresh' && !deadlineMiss) {
+    let reasonText = hasPrice
+      ? `₹${pricePerKg.toFixed(1)}/kg bhav, ${distanceKm} km door, ${lossPct}% est. loss`
+      : `Mandi crop accept karti hai · Bhav update hote hi live net dikhega`;
+    if (hasPrice && freshness === 'fresh' && !deadlineMiss) {
       reasonText += ' · Taaza rate';
     }
 
@@ -390,22 +444,24 @@ export async function getFreshRecommendations(
       approxDistance,
       etaMin,
       pricePerKg,
-      rawPrice: priceDoc.price,
-      rawUnit: priceDoc.unit,
-      priceSource: priceDoc.sourceType,
+      rawPrice,
+      rawUnit,
+      priceSource,
       priceAgeHours: ageHours,
       freshness,
       lossPct,
       saleableKg,
       costs: {
-        transport: financials.transportINR,
-        commission: financials.commissionINR,
-        handling: financials.handlingINR,
+        transport: transportCostINR,
+        commission: commissionINR,
+        handling: handlingINR,
       },
-      net: financials.netINR,
+      net: netINR,
       reasonText,
       warnings,
       deadlineMiss,
+      acceptedCrops: market.acceptedCrops || [normCrop],
+      demands,
     });
   }
 
@@ -414,4 +470,75 @@ export async function getFreshRecommendations(
     markets: processedMarkets,
     ...ranked,
   };
+}
+
+export async function getActiveFreshMarketsWithDemand(query: {
+  lat?: number | string;
+  lng?: number | string;
+}): Promise<any[]> {
+  const pickup: Point =
+    query.lat != null && query.lng != null
+      ? { lat: Number(query.lat), lng: Number(query.lng) }
+      : { lat: 19.8913, lng: 74.4799 };
+
+  const markets = await FreshMarket.find({ active: true }).lean();
+  if (!markets.length) return [];
+
+  const marketIds = markets.map((m) => m._id);
+  const now = Date.now();
+
+  const allLatestPrices = await FreshPrice.aggregate([
+    {
+      $match: {
+        marketId: { $in: marketIds },
+      },
+    },
+    { $sort: { observedAt: -1 } },
+    {
+      $group: {
+        _id: { marketId: '$marketId', crop: '$crop' },
+        latestPrice: { $first: '$$ROOT' },
+      },
+    },
+  ]);
+
+  const priceMap = new Map(
+    allLatestPrices.map((lp) => [`${String(lp._id.marketId)}_${lp._id.crop}`, lp.latestPrice]),
+  );
+
+  return markets
+    .map((m) => {
+      const marketLoc: Point = {
+        lat: m.location?.lat ?? pickup.lat,
+        lng: m.location?.lng ?? pickup.lng,
+      };
+      const distanceKm = Math.round(haversineKm(pickup, marketLoc) * 10) / 10;
+      const demands = (m.acceptedCrops || []).map((crop: string) => {
+        const p = priceMap.get(`${String(m._id)}_${crop}`);
+        const ageHours = p
+          ? Math.max(0, Math.round(((now - new Date(p.observedAt).getTime()) / (3600 * 1000)) * 10) / 10)
+          : 0;
+        return {
+          crop,
+          pricePerKg: p ? convertPriceToPerKg(p.price, p.unit) : 0,
+          rawPrice: p ? p.price : 0,
+          unit: p ? p.unit : 'kg',
+          ageHours,
+        };
+      });
+
+      return {
+        id: String(m._id),
+        name: m.name,
+        code: m.code,
+        location: marketLoc,
+        acceptedCrops: m.acceptedCrops,
+        commissionPct: m.commissionPct,
+        handlingINRPerKg: m.handlingINRPerKg,
+        active: m.active,
+        distanceKm,
+        demands,
+      };
+    })
+    .sort((a, b) => a.distanceKm - b.distanceKm);
 }

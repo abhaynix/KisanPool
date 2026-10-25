@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { api, type ActiveFreshMarketDTO } from '../../../lib/api';
 import { getUser } from '../../../lib/session';
 import { getFavourites, toggleFavourite } from '../../../lib/favourites';
 import { km, rupees } from '../../../lib/format';
@@ -48,6 +49,7 @@ export default function MandiDiscovery() {
   const params = useLocalSearchParams<{ filter?: string }>();
 
   const [origin, setOrigin] = useState<{ lat: number; lng: number } | null>(null);
+  const [liveFreshMarkets, setLiveFreshMarkets] = useState<ActiveFreshMarketDTO[]>([]);
   const [favourites, setFavourites] = useState<string[]>([]);
   const [category, setCategory] = useState<'All' | Category>('All');
   const [query, setQuery] = useState('');
@@ -67,12 +69,18 @@ export default function MandiDiscovery() {
   const load = useCallback(async () => {
     try {
       const [user, saved] = await Promise.all([getUser(), getFavourites()]);
-      setOrigin(
-        user?.defaultLocation
-          ? { lat: user.defaultLocation.lat, lng: user.defaultLocation.lng }
-          : null,
-      );
+      const userLoc = user?.defaultLocation
+        ? { lat: user.defaultLocation.lat, lng: user.defaultLocation.lng }
+        : null;
+      setOrigin(userLoc);
       setFavourites(saved);
+
+      try {
+        const liveMarkets = await api.freshMarkets(userLoc ?? undefined);
+        setLiveFreshMarkets(liveMarkets);
+      } catch {
+        setLiveFreshMarkets([]);
+      }
     } catch {
       // both reads are local storage; a failure just means no location and no
       // favourites, which the screen already renders correctly
@@ -181,6 +189,129 @@ export default function MandiDiscovery() {
             Based on your location and today's demand
           </Txt>
         ) : null}
+
+        {/* Dynamic Fresh Mandis from Admin */}
+        {liveFreshMarkets.length > 0 && !onlyFavourites && (
+          <View style={{ marginBottom: space.md }}>
+            <SectionHeader title="Live Fresh Mandis (Admin Active)" />
+            <Txt
+              variant="labelSm"
+              color={colors.onSurfaceVariant}
+              style={{ marginTop: -space.xs, marginBottom: space.sm }}
+            >
+              Naye add kiye gaye mandis aur unki demand (Tap to send custom request)
+            </Txt>
+            {liveFreshMarkets.map((fm) => (
+              <Card
+                key={fm.id}
+                style={{
+                  marginBottom: space.sm,
+                  borderColor: colors.primary,
+                  borderWidth: 1.5,
+                  backgroundColor: colors.surfaceContainerHigh,
+                }}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <View style={{ flex: 1 }}>
+                    <Txt variant="headlineMd" numberOfLines={1}>
+                      {fm.name}
+                    </Txt>
+                    <Txt variant="labelSm" color={colors.onSurfaceVariant}>
+                      Code: {fm.code} · {fm.distanceKm} km door
+                    </Txt>
+                  </View>
+                  <StatusBadge status="ACTIVE" label="Live Market" />
+                </View>
+
+                {/* Demands */}
+                <View
+                  style={{
+                    marginTop: space.sm,
+                    backgroundColor: colors.surfaceContainerLow,
+                    padding: space.sm,
+                    borderRadius: 8,
+                  }}
+                >
+                  <Txt variant="labelSm" color={colors.onSurfaceVariant} style={{ marginBottom: 4 }}>
+                    📦 Mandi ki zaroorat (Tap crop to fulfill):
+                  </Txt>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.xs }}>
+                    {fm.demands && fm.demands.length > 0 ? (
+                      fm.demands.map((d) => (
+                        <Pressable
+                          key={d.crop}
+                          onPress={() =>
+                            router.push({
+                              pathname: '/(farmer)/requests/new',
+                              params: {
+                                destinationName: fm.name,
+                                destinationLat: String(fm.location.lat),
+                                destinationLng: String(fm.location.lng),
+                                cropType: d.crop,
+                                quantityKg: '100',
+                              },
+                            })
+                          }
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            backgroundColor: colors.surfaceContainer,
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 6,
+                            borderWidth: 1,
+                            borderColor: colors.outlineVariant,
+                          }}
+                        >
+                          <Txt variant="labelSm" style={{ color: colors.primary, fontWeight: '700' }}>
+                            {d.crop.toUpperCase()}
+                          </Txt>
+                          {d.pricePerKg > 0 ? (
+                            <Txt variant="labelSm" style={{ color: colors.onSurface }}>
+                              {' '}· ₹{d.pricePerKg}/kg
+                            </Txt>
+                          ) : (
+                            <Txt variant="labelSm" style={{ color: colors.outline }}>
+                              {' '}· Open
+                            </Txt>
+                          )}
+                          <Txt variant="labelSm" style={{ color: colors.primary, marginLeft: 2 }}>
+                            ➔
+                          </Txt>
+                        </Pressable>
+                      ))
+                    ) : (
+                      <Txt variant="labelSm" color={colors.onSurfaceVariant}>
+                        Accepts: {fm.acceptedCrops.join(', ')}
+                      </Txt>
+                    )}
+                  </View>
+                </View>
+
+                {/* Actions */}
+                <View style={{ marginTop: space.sm }}>
+                  <Button
+                    label="Custome Request Bhejo"
+                    variant="primary"
+                    icon="arrow-forward"
+                    onPress={() =>
+                      router.push({
+                        pathname: '/(farmer)/requests/new',
+                        params: {
+                          destinationName: fm.name,
+                          destinationLat: String(fm.location.lat),
+                          destinationLng: String(fm.location.lng),
+                          cropType: fm.acceptedCrops[0] || 'Tomato',
+                          quantityKg: '100',
+                        },
+                      })
+                    }
+                  />
+                </View>
+              </Card>
+            ))}
+          </View>
+        )}
 
         {loading ? (
           <SkeletonList count={3} />
