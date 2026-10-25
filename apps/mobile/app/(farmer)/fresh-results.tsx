@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View, Share, Pressable, ActivityIndicator } from 'react-native';
+import { ScrollView, StyleSheet, View, Share, Pressable, ActivityIndicator, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen, Header, Txt, Card, Button } from '../../components/ui';
 import { TripMap } from '../../components/TripMap';
@@ -51,9 +51,13 @@ export default function FreshResultsScreen() {
     condition?: string;
     deadlineHours?: string;
     harvestAt?: string;
+    pickupLat?: string;
+    pickupLng?: string;
+    pickupName?: string;
   }>();
 
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<FreshRecommendationResponse | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
@@ -65,8 +69,8 @@ export default function FreshResultsScreen() {
   const deadlineHours = params.deadlineHours ? Number(params.deadlineHours) : null;
   const harvestAt = params.harvestAt || new Date().toISOString();
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
     setError(null);
     try {
       const res = await api.freshRecommendations({
@@ -76,18 +80,28 @@ export default function FreshResultsScreen() {
         condition,
         deadlineHours,
         harvestAt,
+        pickup:
+          params.pickupLat && params.pickupLng
+            ? { lat: Number(params.pickupLat), lng: Number(params.pickupLng) }
+            : undefined,
       });
       setData(res);
     } catch (err: any) {
       setError(err?.message || 'Recommendation load nahi ho saki');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData(true);
   };
 
   useEffect(() => {
     void loadData();
-  }, [crop, quantity, unit, condition, deadlineHours, harvestAt]);
+  }, [crop, quantity, unit, condition, deadlineHours, harvestAt, params.pickupLat, params.pickupLng]);
 
   const handleShare = async (market: FreshMarketItemDTO) => {
     try {
@@ -179,11 +193,13 @@ export default function FreshResultsScreen() {
         {/* Price & Provenance */}
         <View style={styles.priceRow}>
           <View>
-            <Txt variant="headlineLg" style={{ color: colors.primary }}>
-              ₹{market.pricePerKg.toFixed(1)}/kg
+            <Txt variant="headlineLg" style={{ color: market.pricePerKg > 0 ? colors.primary : '#d97706' }}>
+              {market.pricePerKg > 0 ? `₹${market.pricePerKg.toFixed(1)}/kg` : 'Bhav Awaited'}
             </Txt>
             <Txt variant="bodyMd" style={{ color: colors.onSurfaceVariant }}>
-              Listed: ₹{market.rawPrice}/{market.rawUnit}
+              {market.pricePerKg > 0
+                ? `Listed: ₹${market.rawPrice}/${market.rawUnit}`
+                : 'Custom request bhej sakte hain'}
             </Txt>
           </View>
           <View style={{ alignItems: 'flex-end', gap: 4 }}>
@@ -231,8 +247,8 @@ export default function FreshResultsScreen() {
             <Txt variant="headlineMd" style={{ color: colors.onSurface }}>
               Expected Net:
             </Txt>
-            <Txt variant="headlineMd" style={{ color: '#16a34a' }}>
-              ₹{market.net.toLocaleString('en-IN')}
+            <Txt variant="headlineMd" style={{ color: market.pricePerKg > 0 ? '#16a34a' : '#d97706' }}>
+              {market.pricePerKg > 0 ? `₹${market.net.toLocaleString('en-IN')}` : 'Rate aane par tai hoga'}
             </Txt>
           </View>
         </View>
@@ -313,7 +329,12 @@ export default function FreshResultsScreen() {
   return (
     <Screen>
       <Header title="Comparison Results" subtitle="तुलना परिणाम" onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />
+        }
+      >
         {loading ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="large" color={colors.primary} />
@@ -332,11 +353,11 @@ export default function FreshResultsScreen() {
             <Button
               label="Try Again"
               variant="secondary"
-              onPress={loadData}
+              onPress={() => void loadData()}
               style={{ marginTop: space.md }}
             />
           </Card>
-        ) : data?.emptyReason || !data?.markets.length ? (
+        ) : !data?.markets.length ? (
           <Card style={styles.emptyCard}>
             <Txt variant="headlineMd" style={{ color: colors.onSurface }}>
               {data?.emptyReason || 'Koi market is crop ko accept nahi karta'}
@@ -353,6 +374,17 @@ export default function FreshResultsScreen() {
           </Card>
         ) : (
           <>
+            {/* Advisory Banner if emptyReason exists but markets are present */}
+            {data.emptyReason && (
+              <Card style={styles.advisoryBanner}>
+                <Txt variant="labelLg" style={{ color: '#b45309', fontWeight: 'bold' }}>
+                  ℹ {data.emptyReason}
+                </Txt>
+                <Txt variant="bodyMd" style={{ color: '#92400e', marginTop: 2 }}>
+                  Top 3 picks rank nahi ho sake, par sabhi mandis niche available hain.
+                </Txt>
+              </Card>
+            )}
             {/* Top Banner if Extra vs Nearest > 0 */}
             {data.extraVsNearest > 0 && (
               <Card style={styles.extraBanner}>
@@ -468,6 +500,14 @@ const styles = StyleSheet.create({
     borderColor: '#86efac',
     borderWidth: 1,
     borderRadius: radius.md,
+  },
+  advisoryBanner: {
+    padding: space.md,
+    backgroundColor: '#fffbeb',
+    borderColor: '#fde68a',
+    borderWidth: 1,
+    borderRadius: radius.md,
+    marginBottom: space.sm,
   },
   toggleRow: {
     flexDirection: 'row',

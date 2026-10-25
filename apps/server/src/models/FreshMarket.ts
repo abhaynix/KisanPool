@@ -50,12 +50,20 @@ const freshMarketSchema = new Schema(
     },
     acceptedCrops: {
       type: [String],
-      enum: {
-        values: ACCEPTED_CROPS,
-        message: 'Valid crop select karein (tomato, onion, grapes)',
-      },
       default: ['tomato', 'onion', 'grapes'],
+      set: (crops: string[]) =>
+        Array.isArray(crops)
+          ? crops.map((c) => String(c).trim().toLowerCase()).filter(Boolean)
+          : ['tomato', 'onion', 'grapes'],
     },
+    demands: [
+      {
+        crop: { type: String, required: true, trim: true, lowercase: true },
+        quantityNeededKg: { type: Number, default: 0 },
+        targetPriceINRPerKg: { type: Number, default: 0 },
+        notes: { type: String, trim: true },
+      },
+    ],
   },
   { timestamps: true },
 );

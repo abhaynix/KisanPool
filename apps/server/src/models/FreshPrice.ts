@@ -17,11 +17,9 @@ const freshPriceSchema = new Schema(
     },
     crop: {
       type: String,
-      enum: {
-        values: ACCEPTED_CROPS,
-        message: 'Valid crop select karein (tomato, onion, grapes)',
-      },
       required: [true, 'Crop zaroori hai'],
+      trim: true,
+      lowercase: true,
       index: true,
     },
     price: {

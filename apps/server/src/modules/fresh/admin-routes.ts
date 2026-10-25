@@ -48,11 +48,11 @@ function validateMarketInput(body: any, isUpdate = false) {
 
   if (body.acceptedCrops !== undefined) {
     if (!Array.isArray(body.acceptedCrops) || body.acceptedCrops.length === 0) {
-      throw new ApiError('VALIDATION_ERROR', 'Valid crop select karein (tomato, onion, grapes)');
+      throw new ApiError('VALIDATION_ERROR', 'Kam se kam ek crop zaroori hai');
     }
     for (const crop of body.acceptedCrops) {
-      if (!ACCEPTED_CROPS.includes(crop)) {
-        throw new ApiError('VALIDATION_ERROR', 'Valid crop select karein (tomato, onion, grapes)');
+      if (typeof crop !== 'string' || !crop.trim()) {
+        throw new ApiError('VALIDATION_ERROR', 'Crop ka naam sahi hona chahiye');
       }
     }
   }
@@ -179,8 +179,8 @@ function validatePriceInput(body: any) {
   if (!body.marketId) {
     throw new ApiError('VALIDATION_ERROR', 'Market zaroori hai');
   }
-  if (!body.crop || !ACCEPTED_CROPS.includes(body.crop)) {
-    throw new ApiError('VALIDATION_ERROR', 'Valid crop select karein (tomato, onion, grapes)');
+  if (!body.crop || typeof body.crop !== 'string' || !body.crop.trim()) {
+    throw new ApiError('VALIDATION_ERROR', 'Crop ka naam zaroori hai');
   }
   const price = Number(body.price);
   if (body.price === undefined || body.price === null || Number.isNaN(price) || price <= 0) {

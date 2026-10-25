@@ -28,11 +28,12 @@ export function FreshDataTab() {
   const [marketLng, setMarketLng] = useState('');
   const [commissionPct, setCommissionPct] = useState('5');
   const [handlingINRPerKg, setHandlingINRPerKg] = useState('0.5');
-  const [acceptedCrops, setAcceptedCrops] = useState<('tomato' | 'onion' | 'grapes')[]>([
+  const [acceptedCrops, setAcceptedCrops] = useState<string[]>([
     'tomato',
     'onion',
     'grapes',
   ]);
+  const [newCustomCrop, setNewCustomCrop] = useState('');
   const [marketError, setMarketError] = useState<string | null>(null);
   const [marketSuccess, setMarketSuccess] = useState<string | null>(null);
   const [marketSaving, setMarketSaving] = useState(false);
@@ -126,7 +127,7 @@ export function FreshDataTab() {
 
   const handleInlineChange = (
     marketId: string,
-    crop: 'tomato' | 'onion' | 'grapes',
+    crop: string,
     field: 'price' | 'unit' | 'sourceType',
     value: string,
   ) => {
@@ -147,7 +148,7 @@ export function FreshDataTab() {
     });
   };
 
-  const handleSaveSinglePrice = async (marketId: string, crop: 'tomato' | 'onion' | 'grapes') => {
+  const handleSaveSinglePrice = async (marketId: string, crop: string) => {
     const key = `${marketId}-${crop}`;
     const row = inlinePrices[key];
     const priceVal = Number(row?.price);
@@ -348,10 +349,10 @@ export function FreshDataTab() {
                 />
               </div>
 
-              <div style={{ flex: '2 1 260px' }}>
-                <label className="label-sm muted">Accepted Crops</label>
-                <div className="row" style={{ gap: 'var(--s-sm)', marginTop: 6 }}>
-                  {(['tomato', 'onion', 'grapes'] as const).map((crop) => {
+              <div style={{ flex: '2 1 320px' }}>
+                <label className="label-sm muted">Accepted Crops & Custom Produce</label>
+                <div className="row" style={{ gap: 'var(--s-sm)', marginTop: 6, flexWrap: 'wrap' }}>
+                  {(['tomato', 'onion', 'grapes', 'potato'] as const).map((crop) => {
                     const checked = acceptedCrops.includes(crop);
                     return (
                       <label
@@ -382,6 +383,66 @@ export function FreshDataTab() {
                       </label>
                     );
                   })}
+
+                  {/* Custom crops added */}
+                  {acceptedCrops
+                    .filter((c) => !['tomato', 'onion', 'grapes', 'potato'].includes(c))
+                    .map((custom) => (
+                      <span
+                        key={custom}
+                        className="row"
+                        style={{
+                          alignItems: 'center',
+                          gap: 6,
+                          background: '#e0f2fe',
+                          borderColor: '#7dd3fc',
+                          borderWidth: 1,
+                          borderStyle: 'solid',
+                          padding: '4px 8px',
+                          borderRadius: 4,
+                          fontSize: '0.875rem',
+                        }}
+                      >
+                        <strong style={{ textTransform: 'capitalize' }}>{custom}</strong>
+                        <button
+                          type="button"
+                          onClick={() => setAcceptedCrops(acceptedCrops.filter((c) => c !== custom))}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#0369a1',
+                            fontWeight: 'bold',
+                            padding: 0,
+                          }}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                </div>
+
+                {/* Add Custom Crop input */}
+                <div className="row" style={{ gap: 6, marginTop: 8 }}>
+                  <Input
+                    placeholder="Custom crop name (e.g. pomegranate, chilli)"
+                    value={newCustomCrop}
+                    onChange={(e) => setNewCustomCrop(e.target.value)}
+                    style={{ flex: 1, maxWidth: 260 }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const norm = newCustomCrop.trim().toLowerCase();
+                      if (norm && !acceptedCrops.includes(norm)) {
+                        setAcceptedCrops([...acceptedCrops, norm]);
+                        setNewCustomCrop('');
+                      }
+                    }}
+                  >
+                    + Add Custom Crop
+                  </Button>
                 </div>
               </div>
             </div>

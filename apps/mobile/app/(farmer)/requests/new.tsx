@@ -5,10 +5,10 @@
  * does not book anything and costs nothing.
  */
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { View, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { GeoPoint } from '@kisanpool/shared';
-import { api } from '../../../lib/api';
+import { api, type ActiveFreshMarketDTO } from '../../../lib/api';
 import { toAppError } from '../../../lib/errors';
 import { getUser } from '../../../lib/session';
 import { MANDIS } from '../../../lib/mandis';
@@ -40,11 +40,13 @@ export default function NewRequest() {
   const initialCrop = params.crop || params.cropType || 'Onion';
   const initialQty = params.quantity || params.quantityKg || '';
 
+  const matchedInitialCrop = CROPS.find((c) => c.toLowerCase() === initialCrop.toLowerCase());
   const [crop, setCrop] = useState(() => {
-    const matched = CROPS.find((c) => c.toLowerCase() === initialCrop.toLowerCase());
-    return matched || 'Onion';
+    return matchedInitialCrop || 'Other';
   });
-  const [customCrop, setCustomCrop] = useState('');
+  const [customCrop, setCustomCrop] = useState(() => {
+    return matchedInitialCrop ? '' : initialCrop;
+  });
   const [quantity, setQuantity] = useState(initialQty);
   const [notes, setNotes] = useState('');
   const [pickup, setPickup] = useState<GeoPoint | null>(null);
@@ -63,6 +65,8 @@ export default function NewRequest() {
   /** true once the farmer has explicitly chosen , stops a late profile load stomping it */
   const [pickupTouched, setPickupTouched] = useState(false);
 
+  const [liveMarkets, setLiveMarkets] = useState<ActiveFreshMarketDTO[]>([]);
+
   useEffect(() => {
     void getUser().then((user) => {
       // seed from the saved place ONLY as a starting suggestion; the farmer can
@@ -71,6 +75,18 @@ export default function NewRequest() {
       if (user?.defaultLocation && !pickupTouched) setPickup(user.defaultLocation);
     });
   }, [pickupTouched]);
+
+  useEffect(() => {
+    api.freshMarkets()
+      .then((res) => {
+        if (Array.isArray(res)) {
+          setLiveMarkets(res);
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not load fresh markets:', err);
+      });
+  }, []);
 
   const submit = async (): Promise<void> => {
     if (!pickup || !destination) return;
@@ -161,9 +177,91 @@ export default function NewRequest() {
       />
 
       <Txt variant="labelLg" color={colors.onSurfaceVariant} style={{ marginBottom: space.sm }}>
-        Destination mandi
+        Destination Mandi
       </Txt>
-      {MANDIS.map((mandi) => {
+
+      {/* Live Fresh Markets added by Admins / Operators */}
+      {liveMarkets.length > 0 && (
+        <View style={{ gap: space.sm, marginBottom: space.md }}>
+          <Txt variant="labelSm" color={colors.primary} style={{ fontWeight: '700' }}>
+            🌟 KisanPool Fresh Markets (Live Mandi Rates & Demands)
+          </Txt>
+          {liveMarkets.map((m) => {
+            const isSelected = destination?.name === m.name;
+            return (
+              <Card
+                key={`live-${m.id}`}
+                onPress={() =>
+                  setDestination({ name: m.name, lat: m.location.lat, lng: m.location.lng })
+                }
+                style={{
+                  borderColor: isSelected ? colors.primary : colors.outlineVariant,
+                  borderWidth: isSelected ? 2 : 1,
+                  backgroundColor: isSelected ? `${colors.primaryContainer}20` : colors.surfaceContainer,
+                  gap: space.xs,
+                }}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Txt variant="labelLg" style={{ fontWeight: '700' }}>{m.name}</Txt>
+                  {isSelected && (
+                    <Txt variant="labelSm" style={{ color: colors.primary, fontWeight: '700' }}>
+                      ✓ Selected
+                    </Txt>
+                  )}
+                </View>
+                <Txt variant="bodyMd" color={colors.onSurfaceVariant} style={{ fontSize: 12 }}>
+                  Comm: {m.commissionPct}% · Handling: ₹{m.handlingINRPerKg}/kg · {m.distanceKm} km door
+                </Txt>
+
+                {/* Show demands so farmers can fulfill custom market request with 1 tap */}
+                {m.demands && m.demands.length > 0 && (
+                  <View style={{ marginTop: 4 }}>
+                    <Txt variant="labelSm" color={colors.onSurfaceVariant} style={{ fontSize: 11, marginBottom: 2 }}>
+                      📦 Mandi ko chahiye (Tap to choose):
+                    </Txt>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                      {m.demands.map((d) => (
+                        <Pressable
+                          key={d.crop}
+                          onPress={() => {
+                            setDestination({ name: m.name, lat: m.location.lat, lng: m.location.lng });
+                            const cropMatch = CROPS.find((c) => c.toLowerCase() === d.crop.toLowerCase());
+                            if (cropMatch) {
+                              setCrop(cropMatch);
+                              setCustomCrop('');
+                            } else {
+                              setCrop('Other');
+                              setCustomCrop(d.crop);
+                            }
+                          }}
+                          style={{
+                            backgroundColor: colors.surfaceContainerHighest,
+                            paddingHorizontal: 8,
+                            paddingVertical: 2,
+                            borderRadius: 4,
+                            borderWidth: 1,
+                            borderColor: colors.outlineVariant,
+                          }}
+                        >
+                          <Txt variant="labelSm" style={{ color: colors.primary, fontWeight: '600', fontSize: 11 }}>
+                            {d.crop.toUpperCase()} {d.pricePerKg > 0 ? `· ₹${d.pricePerKg}/kg` : ''} ➔
+                          </Txt>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </Card>
+            );
+          })}
+        </View>
+      )}
+
+      {/* APMC Reference Mandis */}
+      <Txt variant="labelSm" color={colors.onSurfaceVariant} style={{ marginBottom: space.xs }}>
+        Other APMC Mandis
+      </Txt>
+      {MANDIS.filter((m) => !liveMarkets.some((lm) => lm.name.toLowerCase() === m.name.toLowerCase())).map((mandi) => {
         const selected = destination?.name === mandi.name;
         return (
           <Card
@@ -174,6 +272,7 @@ export default function NewRequest() {
             style={{
               borderColor: selected ? colors.primary : colors.outlineVariant,
               borderWidth: selected ? 2 : 1,
+              marginBottom: space.xs,
             }}
           >
             <Txt variant="labelLg">{mandi.name}</Txt>

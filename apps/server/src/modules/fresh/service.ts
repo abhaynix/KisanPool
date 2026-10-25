@@ -235,10 +235,21 @@ export async function getFreshRecommendations(
     : null;
 
   // 1. Find active markets accepting this crop
-  const rawMarkets = await FreshMarket.find({
-    active: true,
-    acceptedCrops: normCrop,
+  let rawMarkets = await FreshMarket.find({
+    active: { $ne: false },
+    $or: [
+      { acceptedCrops: normCrop },
+      { acceptedCrops: { $in: [normCrop, new RegExp(`^${normCrop}$`, 'i')] } },
+      { acceptedCrops: { $size: 0 } },
+      { acceptedCrops: { $exists: false } },
+    ],
   }).lean();
+
+  const isCustomCropFallback = !rawMarkets.length;
+  if (isCustomCropFallback) {
+    // If no market specifically lists this crop, show all active markets for custom request
+    rawMarkets = await FreshMarket.find({ active: { $ne: false } }).lean();
+  }
 
   const allActiveMarkets = rawMarkets.filter(
     (m) => m.location?.lat != null && m.location?.lng != null,
@@ -412,7 +423,11 @@ export async function getFreshRecommendations(
       }
     } else {
       freshness = 'stale';
-      warnings.push('Mandi ne is crop ka bhav abhi update nahi kiya hai');
+      warnings.push('Mandi ne is crop ka bhav abhi update nahi kiya hai (Custom Request bhej sakte hain)');
+    }
+
+    if (isCustomCropFallback) {
+      warnings.push(`Custom produce: Mandi se approval ke liye direct custom request bhejein`);
     }
 
     // Deadline check

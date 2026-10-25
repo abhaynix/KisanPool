@@ -44,6 +44,10 @@ describe('KisanPool Fresh - Unit Tests', () => {
     const turningLoss = calculateLossPct('Turning', 'onion', 20);
     assert.equal(turningLoss, 5.0);
 
+    // Custom crop (pomegranate) 10 hours: base 7% (Ripe) + default 0.20%/h * 10h = 9.0%
+    const customCropLoss = calculateLossPct('Ripe', 'pomegranate', 10);
+    assert.equal(customCropLoss, 9.0);
+
     // Fully ripe grapes 200 hours: base 12% + 0.30%/h * 200h = 72% -> clamped to 40%
     const ripeGrapesLoss = calculateLossPct('Fully ripe', 'grapes', 200);
     assert.equal(ripeGrapesLoss, 40);
@@ -570,5 +574,35 @@ describe('KisanPool Fresh - Integration & Model Tests', () => {
       assert.ok(doc.observedAt instanceof Date);
       assert.ok(doc.price > 0);
     }
+  });
+
+  test('custom crop produce can be stored in FreshMarket and FreshPrice', () => {
+    const market = new FreshMarket({
+      name: 'Custom Produce Mandi',
+      code: 'custom-mandi',
+      location: { lat: 19.8913, lng: 74.4799 },
+      active: true,
+      acceptedCrops: ['potato', 'pomegranate', 'ginger'],
+      demands: [
+        { crop: 'pomegranate', targetPriceINRPerKg: 120, quantityKg: 500 },
+      ],
+    });
+
+    assert.equal(market.validateSync(), undefined);
+    assert.deepEqual(market.acceptedCrops, ['potato', 'pomegranate', 'ginger']);
+    assert.equal(market.demands?.length, 1);
+    assert.equal(market.demands?.[0].crop, 'pomegranate');
+
+    const customPrice = new FreshPrice({
+      marketId: market._id,
+      crop: 'pomegranate',
+      price: 115,
+      unit: 'kg',
+      sourceType: 'OPERATOR',
+    });
+
+    assert.equal(customPrice.validateSync(), undefined);
+    assert.equal(customPrice.crop, 'pomegranate');
+    assert.equal(customPrice.price, 115);
   });
 });

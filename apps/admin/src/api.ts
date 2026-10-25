@@ -72,7 +72,7 @@ export interface FreshMarketDTO {
   active: boolean;
   commissionPct: number;
   handlingINRPerKg: number;
-  acceptedCrops: ('tomato' | 'onion' | 'grapes')[];
+  acceptedCrops: string[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -83,7 +83,7 @@ export interface FreshPriceDTO {
   marketName?: string;
   marketCode?: string;
   active?: boolean;
-  crop: 'tomato' | 'onion' | 'grapes';
+  crop: string;
   price: number;
   unit: 'kg' | 'quintal' | 'tonne';
   sourceType: 'OFFICIAL' | 'OPERATOR' | 'DEMO';
