@@ -25,6 +25,7 @@ import { ReportsTab } from './tabs/Reports';
 import { SettingsTab } from './tabs/Settings';
 import { ResilienceTab } from './tabs/Resilience';
 import { FreshOpsTab } from './tabs/FreshOps';
+import { FreshDataTab } from './tabs/FreshData';
 
 type TabId =
   | 'dashboard'
@@ -33,6 +34,7 @@ type TabId =
   | 'farmers'
   | 'transporters'
   | 'mandis'
+  | 'freshData'
   | 'bookings'
   | 'billing'
   | 'alerts'
@@ -59,6 +61,7 @@ const TABS: Tab[] = [
   { id: 'farmers', label: 'Farmers', icon: '⚘', group: 'Network', render: () => <FarmersTab /> },
   { id: 'transporters', label: 'Transporters', icon: '⛟', group: 'Network', render: () => <TransportersTab /> },
   { id: 'mandis', label: 'Mandis', icon: '⌂', group: 'Network', render: () => <MandisTab /> },
+  { id: 'freshData', label: 'Fresh Data', icon: '⚘', group: 'Network', render: () => <FreshDataTab /> },
   { id: 'billing', label: 'Payments & billing', icon: '₹', group: 'Money', render: () => <BillingTab /> },
   { id: 'alerts', label: 'Alerts & issues', icon: '⚠', group: 'Oversight', render: () => <AlertsTab /> },
   { id: 'ai', label: 'AI assistant', icon: '◍', group: 'Oversight', render: () => <AiTab /> },

@@ -152,6 +152,46 @@ export interface MachineSearchResult extends FarmMachineDTO {
   quote: MachineQuoteDTO | null;
 }
 
+export interface FreshMarketItemDTO {
+  id: string;
+  name: string;
+  code: string;
+  location: { lat: number; lng: number };
+  distanceKm: number;
+  approxDistance: boolean;
+  etaMin: number;
+  pricePerKg: number;
+  rawPrice: number;
+  rawUnit: string;
+  priceSource: string;
+  priceAgeHours: number;
+  freshness: 'fresh' | 'stale' | 'expired';
+  lossPct: number;
+  saleableKg: number;
+  costs: {
+    transport: number;
+    commission: number;
+    handling: number;
+  };
+  net: number;
+  reasonText: string;
+  warnings: string[];
+  deadlineMiss: boolean;
+  score?: number;
+}
+
+export interface FreshRecommendationResponse {
+  markets: FreshMarketItemDTO[];
+  picks: {
+    nearest?: FreshMarketItemDTO;
+    bestProfit?: FreshMarketItemDTO;
+    balanced?: FreshMarketItemDTO;
+  };
+  nearTie: boolean;
+  extraVsNearest: number;
+  emptyReason: string | null;
+}
+
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   body?: unknown;
@@ -310,6 +350,19 @@ export const api = {
   }) => request<TransportRequestDTO>('/transport/requests', { method: 'POST', body: input }),
 
   // ---------- Fresh recommendation snapshots ----------
+  freshRecommendations: (body: {
+    crop: string;
+    quantity: number;
+    unit: string;
+    harvestAt?: string;
+    condition?: string;
+    deadlineHours?: number | null;
+    pickup?: { lat: number; lng: number };
+  }) =>
+    request<FreshRecommendationResponse>('/fresh/recommendations', {
+      method: 'POST',
+      body,
+    }),
 
   /** The farmer's requests, each with how many transporters have claimed it. */
   myRequests: () =>

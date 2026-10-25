@@ -23,6 +23,8 @@ import { adminRouter } from './modules/admin/routes';
 import { predictionsRouter } from './modules/predictions/routes';
 import { adminResilienceRouter, resilienceRouter } from './modules/resilience/routes';
 import { recoveryRouter } from './modules/recovery/routes';
+import { freshRouter } from './modules/fresh/routes';
+import { adminFreshRouter } from './modules/fresh/admin-routes';
 import { cargoRouter } from './modules/cargo/routes';
 import { recoveryState, databaseHealth, cacheHealth } from './modules/resilience/health';
 
@@ -71,8 +73,10 @@ export function createApp() {
   app.use('/transporters', transportersRouter);
   app.use('/ai', aiRouter);
   app.use('/maps', mapsRouter);
+  app.use('/fresh', freshRouter);
   app.use('/recovery', recoveryRouter);
   app.use('/cargo', cargoRouter);
+  app.use('/admin/fresh', adminFreshRouter);
   app.use('/admin', adminRouter);
   // advisory risk scoring — read-only, never authoritative (ADR-041)
   app.use('/predictions', predictionsRouter);

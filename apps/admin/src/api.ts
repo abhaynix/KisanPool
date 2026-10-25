@@ -64,6 +64,36 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 // ---- types the console renders ----
 
+export interface FreshMarketDTO {
+  _id: string;
+  name: string;
+  code: string;
+  location: { lat: number; lng: number };
+  active: boolean;
+  commissionPct: number;
+  handlingINRPerKg: number;
+  acceptedCrops: ('tomato' | 'onion' | 'grapes')[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface FreshPriceDTO {
+  _id: string;
+  marketId: string;
+  marketName?: string;
+  marketCode?: string;
+  active?: boolean;
+  crop: 'tomato' | 'onion' | 'grapes';
+  price: number;
+  unit: 'kg' | 'quintal' | 'tonne';
+  sourceType: 'OFFICIAL' | 'OPERATOR' | 'DEMO';
+  observedAt: string;
+  fetchedAt: string;
+  createdBy: string;
+  ageHours?: number;
+  freshness?: 'fresh' | 'stale' | 'expired';
+}
+
 export interface Stats {
   users: { total: number; byRole: Record<string, number>; newThisWeek: number };
   vehicles: {
@@ -417,6 +447,63 @@ export const api = {
     request(`/recovery/settlements/${encodeURIComponent(incidentId)}/legs/${sequence}/verify-completion`, {
       method: 'PATCH', body: JSON.stringify(input),
     }),
+
+  // Fresh Data admin APIs
+  freshMarkets: () => request<FreshMarketDTO[]>('/admin/fresh/markets'),
+
+  createFreshMarket: (data: Partial<FreshMarketDTO>) =>
+    request<FreshMarketDTO>('/admin/fresh/markets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateFreshMarket: (id: string, data: Partial<FreshMarketDTO>) =>
+    request<FreshMarketDTO>(`/admin/fresh/markets/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteFreshMarket: (id: string) =>
+    request<{ success: boolean; market: FreshMarketDTO }>(`/admin/fresh/markets/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    }),
+
+  freshLatestPrices: () => request<FreshPriceDTO[]>('/admin/fresh/prices/latest'),
+
+  createFreshPrice: (data: {
+    marketId: string;
+    crop: string;
+    price: number;
+    unit?: string;
+    sourceType?: string;
+    observedAt?: string;
+  }) =>
+    request<FreshPriceDTO>('/admin/fresh/prices', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  bulkUpdateFreshPrices: (
+    items: Array<{
+      marketId: string;
+      crop: string;
+      price: number;
+      unit?: string;
+      sourceType?: string;
+      observedAt?: string;
+    }>,
+  ) =>
+    request<FreshPriceDTO[]>('/admin/fresh/prices/bulk', {
+      method: 'POST',
+      body: JSON.stringify(items),
+    }),
+
+  freshPriceHistory: (marketId: string, crop?: string) =>
+    request<FreshPriceDTO[]>(
+      `/admin/fresh/prices/history?marketId=${encodeURIComponent(marketId)}${
+        crop ? `&crop=${encodeURIComponent(crop)}` : ''
+      }`,
+    ),
 
   users: (query: { q?: string; role?: string }) => {
     const params = new URLSearchParams();

@@ -23,6 +23,8 @@ export { PricingEvent } from './PricingEvent';
 export { WebhookEvent } from './WebhookEvent';
 export { RecoveryIncident } from './RecoveryIncident';
 export { CargoLedger } from './CargoLedger';
+export { FreshMarket } from './FreshMarket';
+export { FreshPrice } from './FreshPrice';
 
 // V2 — Farm Resource Network
 export { FarmMachine } from './FarmMachine';
@@ -45,6 +47,8 @@ export type { TripShipmentDoc } from './TripShipment';
 export type { TransporterOfferDoc } from './TransporterOffer';
 export type { PricingEventDoc } from './PricingEvent';
 export type { WebhookEventDoc } from './WebhookEvent';
+export type { FreshMarketDoc } from './FreshMarket';
+export type { FreshPriceDoc } from './FreshPrice';
 
 export type { FarmMachineDoc } from './FarmMachine';
 export type { MachineBookingDoc } from './MachineBooking';

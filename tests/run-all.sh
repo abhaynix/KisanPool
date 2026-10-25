@@ -4,6 +4,7 @@ cd "$(dirname "$0")/.."
 
 echo '########## Offline Fresh, market-price, cargo, and demo tests ##########'
 node --import tsx --test \
+  tests/fresh.test.ts \
   tests/cargo-ledger.test.ts \
   tests/kisanpool-demo.test.ts
 
